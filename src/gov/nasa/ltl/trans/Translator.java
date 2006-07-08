@@ -1,6 +1,5 @@
-
 //
-// Copyright (C) 2005 United States Government as represented by the
+// Copyright (C) 2006 United States Government as represented by the
 // Administrator of the National Aeronautics and Space Administration
 // (NASA).  All Rights Reserved.
 // 
@@ -17,9 +16,8 @@
 // THE SUBJECT SOFTWARE WILL BE ERROR FREE, OR ANY WARRANTY THAT
 // DOCUMENTATION, IF PROVIDED, WILL CONFORM TO THE SUBJECT SOFTWARE.
 //
-
-// Written by Dimitra Giannakopoulou, 19 Jan 2001
 package gov.nasa.ltl.trans;
+//Written by Dimitra Giannakopoulou, 19 Jan 2001
 
 import gov.nasa.ltl.graph.*;
 
