@@ -50,17 +50,17 @@ public class Edge {
   }
 
   public Edge (Node s, Edge e) {
-    init(s, e.next, new String(e.guard), new String(e.action), 
+    init(s, e.next, e.guard, e.action, 
          new Attributes(e.attributes));
   }
 
   public Edge (Edge e, Node n) {
-    init(e.source, n, new String(e.guard), new String(e.action), 
+    init(e.source, n, e.guard, e.action, 
          new Attributes(e.attributes));
   }
 
   public Edge (Edge e) {
-    init(e.source, e.next, new String(e.guard), new String(e.action), 
+    init(e.source, e.next, e.guard, e.action, 
          new Attributes(e.attributes));
   }
 
@@ -220,7 +220,7 @@ public class Edge {
     String          g = guard.equals("-") ? "1" : guard;
     String          accs = "";
 
-    StringTokenizer tok = new StringTokenizer(new String(g), "&");
+    StringTokenizer tok = new StringTokenizer(g, "&");
     g = "";
 
     while (tok.hasMoreTokens()) {
@@ -231,7 +231,7 @@ public class Edge {
       }
     }
 
-    tok = new StringTokenizer(new String(g), "|");
+    tok = new StringTokenizer(g, "|");
     g = "";
 
     while (tok.hasMoreTokens()) {

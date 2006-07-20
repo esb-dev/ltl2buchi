@@ -25,7 +25,8 @@ import java.util.TreeSet;
 /**
  * DOCUMENT ME!
  */
-public class ColorPair extends Pair<TreeSet<ITypeNeighbor>> implements Comparable<ColorPair> {
+public class ColorPair extends Pair<TreeSet<ITypeNeighbor>>
+implements Comparable<ColorPair> {
   public ColorPair (int colorIn, TreeSet<ITypeNeighbor> iMaxSetIn) {
     super(colorIn, iMaxSetIn);
   }
@@ -115,5 +116,11 @@ public class ColorPair extends Pair<TreeSet<ITypeNeighbor>> implements Comparabl
     }
 
     return true;
+  }
+  
+  public int hashCode() {
+    assert false : "hashCode not designed";
+    return 42; // any arbitrary constant will do
+    // thanks, FindBugs!
   }
 }

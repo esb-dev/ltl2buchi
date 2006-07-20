@@ -411,8 +411,9 @@ public class LTL2Buchi {
 	private static String loadLTL(String fname) {
 		try {
 			BufferedReader in = new BufferedReader(new FileReader(fname));
-
-			return in.readLine();
+			String line = in.readLine();
+      in.close();
+			return line;
 		} catch (FileNotFoundException e) {
 			throw new LTLErrorException("Can't load LTL formula: " + fname);
 		} catch (IOException e) {
