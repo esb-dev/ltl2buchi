@@ -658,7 +658,7 @@ public class Formula implements Comparable<Formula> {
 
       case '"':
 
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         i.skip();
 
         while ((ch = i.get()) != '"') {
@@ -675,7 +675,7 @@ public class Formula implements Comparable<Formula> {
       default:
 
         if (Character.isJavaIdentifierStart(ch)) {
-          StringBuffer sbf = new StringBuffer();
+          StringBuilder sbf = new StringBuilder();
 
           sbf.append(ch);
           i.skip();
@@ -697,7 +697,7 @@ public class Formula implements Comparable<Formula> {
           } else if (id.equals("false")) {
             formula = False();
           } else {
-            formula = Proposition(sbf.toString());
+            formula = Proposition(id);
           }
         } else {
           throw new ParseErrorException("invalid character: " + ch);
@@ -1011,10 +1011,10 @@ public class Formula implements Comparable<Formula> {
    * DOCUMENT ME!
    */
   private static class Input {
-    private StringBuffer sb;
+    private StringBuilder sb;
 
     public Input (String str) {
-      sb = new StringBuffer(str);
+      sb = new StringBuilder(str);
     }
 
     public char get () throws EndOfInputException {

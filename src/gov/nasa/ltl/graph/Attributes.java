@@ -127,7 +127,7 @@ public class Attributes {
       return "-";
     }
 
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
 
     for (Enumeration<Object> e = ht.keys(); e.hasMoreElements();) {
       Object key = e.nextElement();

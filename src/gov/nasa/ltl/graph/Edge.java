@@ -180,14 +180,14 @@ public class Edge {
       }
     } else {
       boolean      first = true;
-      StringBuffer sb = new StringBuffer();
+      StringBuilder sb = new StringBuilder();
 
       for (int i = 0; i < nsets; i++) {
         if (getBooleanAttribute("acc" + i)) {
           if (first) {
             first = false;
           } else {
-            sb.append(",");
+            sb.append(',');
           }
 
           sb.append(i);
@@ -195,7 +195,9 @@ public class Edge {
       }
 
       if (!first) {
-        accs = "{" + sb.toString() + "}";
+        sb.insert(0, '{');
+        sb.append('}');
+        accs = sb.toString();
       }
     }
 
@@ -250,14 +252,14 @@ public class Edge {
       }
     } else {
       boolean      first = true;
-      StringBuffer sb = new StringBuffer();
+      StringBuilder sb = new StringBuilder();
 
       for (int i = 0; i < nsets; i++) {
         if (getBooleanAttribute("acc" + i)) {
           if (first) {
             first = false;
           } else {
-            sb.append(",");
+            sb.append(',');
           }
 
           sb.append(i);
@@ -265,7 +267,9 @@ public class Edge {
       }
 
       if (!first) {
-        accs = "{" + sb.toString() + "}";
+        sb.insert(0, '{');
+        sb.append('}');
+        accs = sb.toString();
       }
     }
 
@@ -294,7 +298,7 @@ public class Edge {
   }
 
   private String xml_quote (String s) {
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
 
     for (int i = 0; i < s.length(); i++) {
       char ch = s.charAt(i);

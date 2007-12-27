@@ -46,10 +46,10 @@ class Transition {
     } else {
       // first print the propositions involved
       Iterator<Formula> it = propositions.iterator();
-      Formula      nextForm = null;
-      StringBuffer act = new StringBuffer();
-      char         cont; // stores content of formula
-      boolean      need_AND = false; // connect with AND multiple propositions
+      Formula       nextForm = null;
+      StringBuilder act = new StringBuilder();
+      char          cont; // stores content of formula
+      boolean       need_AND = false; // connect with AND multiple propositions
 
       while (it.hasNext()) {
         nextForm = it.next();
@@ -80,7 +80,8 @@ class Transition {
         }
       }
 
-      System.out.print(act + "{");
+      act.append('{');
+      System.out.print(act);
     }
 
     if (Node.accepting_conds == 0) {
@@ -107,17 +108,17 @@ class Transition {
 
     if (!propositions.isEmpty()) {
       Iterator<Formula> it = propositions.iterator();
-      Formula      nextForm = null;
-      StringBuffer sb = new StringBuffer();
-      char         cont; // stores content of formula
-      boolean      need_AND = false; // connect with AND multiple propositions
+      Formula       nextForm = null;
+      StringBuilder sb = new StringBuilder();
+      char          cont; // stores content of formula
+      boolean       need_AND = false; // connect with AND multiple propositions
 
       while (it.hasNext()) {
         nextForm = it.next();
         cont = nextForm.getContent();
 
         if (need_AND) {
-          sb.append("&");
+          sb.append('&');
         }
 
         need_AND = true;

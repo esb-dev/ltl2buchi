@@ -37,10 +37,10 @@ public class Generate {
     for (int i = 0; i < nnodes; i++) {
       nodes[i] = new Node(g);
 
-      StringBuffer label = new StringBuffer();
+      StringBuilder label = new StringBuilder();
 
       for (int k = 0; k < i; k++) {
-        label.append("acc" + k + "+");
+        label.append("acc").append(k).append('+');
       }
 
       nodes[i].setStringAttribute("label", label.toString());

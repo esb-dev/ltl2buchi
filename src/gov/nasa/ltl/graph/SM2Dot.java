@@ -68,7 +68,8 @@ public class SM2Dot {
     String       action = e.getAction();
     String       label = e.getStringAttribute("label");
 
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
+    sb.append('\t').append(id).append(" -> ").append(nxt).append(" [label=\"");
 
     if (label != null) {
       sb.append(label);
@@ -76,13 +77,14 @@ public class SM2Dot {
     }
 
     if (!guard.equals("-")) {
+      sb.append(guard);
       if (!action.equals("-")) {
-        sb.append(guard + "/" + action + "\\n");
+        sb.append('/').append(action).append("\\n");
       } else {
-        sb.append(guard + "\\n");
+        sb.append("\\n");
       }
     } else if (!action.equals("-")) {
-      sb.append(guard + "/" + action + "\\n");
+      sb.append(guard).append('/').append(action).append("\\n");
     } else {
       sb.append("true\\n");
     }
@@ -93,10 +95,10 @@ public class SM2Dot {
     for (int i = 0; i < nsets; i++) {
       if (e.getBooleanAttribute("acc" + i)) {
         if (first) {
-          sb.append("{");
+          sb.append('{');
           first = false;
         } else {
-          sb.append(",");
+          sb.append(',');
         }
 
         sb.append(i);
@@ -104,11 +106,11 @@ public class SM2Dot {
     }
 
     if (!first) {
-      sb.append("}");
+      sb.append('}');
     }
+    sb.append("\"]");
 
-    System.out.println("\t" + id + " -> " + nxt + " [label=\"" + 
-                       sb.toString() + "\"]");
+    System.out.println(sb.toString());
   }
 
   public static void printInit (Node n) {
@@ -126,14 +128,15 @@ public class SM2Dot {
     }
 
     String       label = n.getStringAttribute("label");
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
+    sb.append('\t').append(id).append(" [label=\"");
 
     if (label != null) {
       sb.append(label);
       sb.append("\\n");
     }
 
-    sb.append(id + "\\n");
+    sb.append(id).append("\\n");
 
     int     nsets = n.getGraph().getIntAttribute("nsets");
     boolean first = true;
@@ -141,10 +144,10 @@ public class SM2Dot {
     for (int i = 0; i < nsets; i++) {
       if (n.getBooleanAttribute("acc" + i)) {
         if (first) {
-          sb.append("{");
+          sb.append('{');
           first = false;
         } else {
-          sb.append(",");
+          sb.append(',');
         }
 
         sb.append(i);
@@ -152,10 +155,11 @@ public class SM2Dot {
     }
 
     if (!first) {
-      sb.append("}");
+      sb.append('}');
     }
+    sb.append("\"];");
 
-    System.out.println("\t" + id + " [label=\"" + sb.toString() + "\"];");
+    System.out.println(sb.toString());
   }
 
   public static void startDigraph (String name) {
