@@ -31,18 +31,6 @@ import java.util.*;
  */
 public class Formula implements Comparable<Formula> {
   private static int       nId = 0;
-  private static final int P_ALL = 0;
-  private static final int P_IMPLIES = 1;
-  private static final int P_OR = 2;
-  private static final int P_AND = 3;
-  private static final int P_UNTIL = 4;
-  private static final int P_WUNTIL = 4;
-  private static final int P_RELEASE = 5;
-  private static final int P_WRELEASE = 5;
-  private static final int P_NOT = 6;
-  private static final int P_NEXT = 6;
-  private static final int P_ALWAYS = 6;
-  private static final int P_EVENTUALLY = 6;
   private static Hashtable<String, Formula> ht = new Hashtable<String, Formula>();
   private static Hashtable<String, Formula> matches = new Hashtable<String, Formula>();
   private char             content;
@@ -183,11 +171,11 @@ public class Formula implements Comparable<Formula> {
     int acc_sets = countUntils(0);
     reset_visited();
 
-    if (false) System.out.println("Number of Us is: " + acc_sets);
-    int test = processRightUntils(0, acc_sets);
+//    if (false) System.out.println("Number of Us is: " + acc_sets);
+    /*int test =*/ processRightUntils(0, acc_sets);
     reset_visited();
 
-    if (false) System.out.println("Number of Us is: " + test);
+//    if (false) System.out.println("Number of Us is: " + test);
     return acc_sets;
   }
 
@@ -286,13 +274,6 @@ public class Formula implements Comparable<Formula> {
 
   public Formula negate () {
     return Not(this);
-  }
-
-  public static Formula parse (String str) throws ParseErrorException { // "aObAc"
-
-    Input i = new Input(str);
-
-    return parse(i, P_ALL);
   }
 
   public int processRightUntils (int current_index, int acc_sets) {
@@ -472,11 +453,11 @@ public class Formula implements Comparable<Formula> {
     }
   }
 
-  private static Formula Always (Formula f) {
+  static Formula Always (Formula f) {
     return unique(new Formula('V', false, False(), f, null));
   }
 
-  private static Formula And (Formula sx, Formula dx) {
+  static Formula And (Formula sx, Formula dx) {
     if (sx.id < dx.id) {
       return unique(new Formula('A', false, sx, dx, null));
     } else {
@@ -484,23 +465,23 @@ public class Formula implements Comparable<Formula> {
     }
   }
 
-  private static Formula Eventually (Formula f) {
+  static Formula Eventually (Formula f) {
     return unique(new Formula('U', false, True(), f, null));
   }
 
-  private static Formula False () {
+  static Formula False () {
     return unique(new Formula('f', true, null, null, null));
   }
 
-  private static Formula Implies (Formula sx, Formula dx) {
+  static Formula Implies (Formula sx, Formula dx) {
     return Or(Not(sx), dx);
   }
 
-  private static Formula Next (Formula f) {
+  static Formula Next (Formula f) {
     return unique(new Formula('X', false, f, null, null));
   }
 
-  private static Formula Not (Formula f) {
+  static Formula Not (Formula f) {
     if (f.literal) {
       switch (f.content) {
       case 't':
@@ -546,7 +527,7 @@ public class Formula implements Comparable<Formula> {
     }
   }
 
-  private static Formula Or (Formula sx, Formula dx) {
+  static Formula Or (Formula sx, Formula dx) {
     if (sx.id < dx.id) {
       return unique(new Formula('O', false, sx, dx, null));
     } else {
@@ -554,27 +535,27 @@ public class Formula implements Comparable<Formula> {
     }
   }
 
-  private static Formula Proposition (String name) {
+  static Formula Proposition (String name) {
     return unique(new Formula('p', true, null, null, name));
   }
 
-  private static Formula Release (Formula sx, Formula dx) {
+  static Formula Release (Formula sx, Formula dx) {
     return unique(new Formula('V', false, sx, dx, null));
   }
 
-  private static Formula True () {
+  static Formula True () {
     return unique(new Formula('t', true, null, null, null));
   }
 
-  private static Formula Until (Formula sx, Formula dx) {
+  static Formula Until (Formula sx, Formula dx) {
     return unique(new Formula('U', false, sx, dx, null));
   }
 
-  private static Formula WRelease (Formula sx, Formula dx) {
+  static Formula WRelease (Formula sx, Formula dx) {
     return unique(new Formula('U', false, dx, And(sx, dx), null));
   }
 
-  private static Formula WUntil (Formula sx, Formula dx) {
+  static Formula WUntil (Formula sx, Formula dx) {
     return unique(new Formula('W', false, sx, dx, null));
   }
 
@@ -584,296 +565,6 @@ public class Formula implements Comparable<Formula> {
 
   private static void clearMatches () {
     matches = new Hashtable<String, Formula>();
-  }
-
-  private static Formula parse (Input i, int precedence)
-                         throws ParseErrorException {
-    try {
-      Formula formula;
-      char    ch;
-
-      while (i.get() == ' ') {
-        i.skip();
-      }
-
-      switch (ch = i.get()) {
-      case '/': // and
-      case '&': // robbyjo's and
-      case '\\': // or
-      case '|': // robbyjo's or
-      case 'U': // until
-      case 'W': // weak until
-      case 'V': // release
-      case 'M': // dual of W - weak release
-      case ')':
-        throw new ParseErrorException("invalid character: " + ch);
-
-      case '!': // not
-        i.skip();
-        formula = Not(parse(i, P_NOT));
-
-        break;
-
-      case 'X': // next
-        i.skip();
-        formula = Next(parse(i, P_NEXT));
-
-        break;
-
-      case '[': // always
-        i.skip();
-
-        if (i.get() != ']') {
-          throw new ParseErrorException("expected ]");
-        }
-
-        i.skip();
-        formula = Always(parse(i, P_ALWAYS));
-
-        break;
-
-      case '<': // eventually
-        i.skip();
-
-        if (i.get() != '>') {
-          throw new ParseErrorException("expected >");
-        }
-
-        i.skip();
-        formula = Eventually(parse(i, P_EVENTUALLY));
-
-        break;
-
-      case '(':
-        i.skip();
-        formula = parse(i, P_ALL);
-
-        if (i.get() != ')') {
-          throw new ParseErrorException("invalid character: " + ch);
-        }
-
-        i.skip();
-
-        break;
-
-      case '"':
-
-        StringBuilder sb = new StringBuilder();
-        i.skip();
-
-        while ((ch = i.get()) != '"') {
-          sb.append(ch);
-          i.skip();
-        }
-
-        i.skip();
-
-        formula = Proposition(sb.toString());
-
-        break;
-
-      default:
-
-        if (Character.isJavaIdentifierStart(ch)) {
-          StringBuilder sbf = new StringBuilder();
-
-          sbf.append(ch);
-          i.skip();
-
-          try {
-            while (Character.isJavaIdentifierPart(ch = i.get()) && 
-                   (!Formula.is_reserved_char(ch))) {
-              sbf.append(ch);
-              i.skip();
-            }
-          } catch (EndOfInputException e) {
-            //	return Proposition(sbf.toString());
-          }
-
-          String id = sbf.toString();
-
-          if (id.equals("true")) {
-            formula = True();
-          } else if (id.equals("false")) {
-            formula = False();
-          } else {
-            formula = Proposition(id);
-          }
-        } else {
-          throw new ParseErrorException("invalid character: " + ch);
-        }
-
-        break;
-      }
-
-      try {
-        while (i.get() == ' ') {
-          i.skip();
-        }
-
-        ch = i.get();
-      } catch (EndOfInputException e) {
-        return formula;
-      }
-
-      while (true) {
-        switch (ch) {
-        case '/': // and
-
-          if (precedence > P_AND) {
-            return formula;
-          }
-
-          i.skip();
-
-          if (i.get() != '\\') {
-            throw new ParseErrorException("expected \\");
-          }
-
-          i.skip();
-          formula = And(formula, parse(i, P_AND));
-
-          break;
-
-        case '&': // robbyjo's and
-
-          if (precedence > P_AND) {
-            return formula;
-          }
-
-          i.skip();
-
-          if (i.get() != '&') {
-            throw new ParseErrorException("expected &&");
-          }
-
-          i.skip();
-          formula = And(formula, parse(i, P_AND));
-
-          break;
-
-        case '\\': // or
-
-          if (precedence > P_OR) {
-            return formula;
-          }
-
-          i.skip();
-
-          if (i.get() != '/') {
-            throw new ParseErrorException("expected /");
-          }
-
-          i.skip();
-          formula = Or(formula, parse(i, P_OR));
-
-          break;
-
-        case '|': // robbyjo's or
-
-          if (precedence > P_OR) {
-            return formula;
-          }
-
-          i.skip();
-
-          if (i.get() != '|') {
-            throw new ParseErrorException("expected ||");
-          }
-
-          i.skip();
-          formula = Or(formula, parse(i, P_OR));
-
-          break;
-
-        case 'U': // until
-
-          if (precedence > P_UNTIL) {
-            return formula;
-          }
-
-          i.skip();
-          formula = Until(formula, parse(i, P_UNTIL));
-
-          break;
-
-        case 'W': // weak until
-
-          if (precedence > P_WUNTIL) {
-            return formula;
-          }
-
-          i.skip();
-          formula = WUntil(formula, parse(i, P_WUNTIL));
-
-          break;
-
-        case 'V': // release
-
-          if (precedence > P_RELEASE) {
-            return formula;
-          }
-
-          i.skip();
-          formula = Release(formula, parse(i, P_RELEASE));
-
-          break;
-
-        case 'M': // weak_release
-
-          if (precedence > P_WRELEASE) {
-            return formula;
-          }
-
-          i.skip();
-          formula = WRelease(formula, parse(i, P_WRELEASE));
-
-          break;
-
-        case '-': // implies
-
-          if (precedence > P_IMPLIES) {
-            return formula;
-          }
-
-          i.skip();
-
-          if (i.get() != '>') {
-            throw new ParseErrorException("expected >");
-          }
-
-          i.skip();
-          formula = Implies(formula, parse(i, P_IMPLIES));
-
-          break;
-
-        case ')':
-          return formula;
-
-        case '!':
-        case 'X':
-        case '[':
-        case '<':
-        case '(':
-        default:
-          throw new ParseErrorException("invalid character: " + ch);
-        }
-
-        try {
-          while (i.get() == ' ') {
-            i.skip();
-          }
-
-          ch = i.get();
-        } catch (EndOfInputException e) {
-          break;
-        }
-      }
-
-      return formula;
-    } catch (EndOfInputException e) {
-      throw new ParseErrorException("unexpected end of input");
-    }
   }
 
   private static Formula unique (Formula f) {
@@ -999,38 +690,5 @@ public class Formula implements Comparable<Formula> {
     }
 
     throw new RuntimeException("code should not be reached");
-  }
-
-  /**
-   * DOCUMENT ME!
-   */
-  @SuppressWarnings("serial")
-  public static class EndOfInputException extends Exception { }
-
-  /**
-   * DOCUMENT ME!
-   */
-  private static class Input {
-    private StringBuilder sb;
-
-    public Input (String str) {
-      sb = new StringBuilder(str);
-    }
-
-    public char get () throws EndOfInputException {
-      try {
-        return sb.charAt(0);
-      } catch (StringIndexOutOfBoundsException e) {
-        throw new EndOfInputException();
-      }
-    }
-
-    public void skip () throws EndOfInputException {
-      try {
-        sb.deleteCharAt(0);
-      } catch (StringIndexOutOfBoundsException e) {
-        throw new EndOfInputException();
-      }
-    }
   }
 }

@@ -19,7 +19,6 @@
 package gov.nasa.ltl.trans;
 
 import java.io.*;
-import java.io.BufferedReader;
 
 // Added by ckong - Sept 7, 2001
 import java.io.StringReader;
@@ -41,7 +40,7 @@ public class Rewriter {
     try {
       if (args.length != 0) {
         for (int i = 0; i < args.length; i++) {
-          Formula f = Formula.parse(args[i]);
+          Formula f = Parser.parse(args[i]);
 
           osize += f.size();
           System.out.println(f = rewrite(f));
@@ -65,7 +64,7 @@ public class Rewriter {
               continue;
             }
 
-            Formula f = Formula.parse(line);
+            Formula f = Parser.parse(line);
 
             osize += f.size();
             System.out.println(f = rewrite(f));
@@ -125,7 +124,7 @@ public class Rewriter {
           continue;
         }
 
-        Formula   rule = Formula.parse(line);
+        Formula   rule = Parser.parse(line);
 
         Formula[] n = new Formula[rules.length + 1];
         System.arraycopy(rules, 0, n, 0, rules.length);
@@ -144,7 +143,7 @@ public class Rewriter {
   public static String rewrite (String expr) throws ParseErrorException {
     try {
       //   	System.out.println("String is: " + expr);
-      Formula formula = Formula.parse(expr);
+      Formula formula = Parser.parse(expr);
 
       //    	System.out.println("And after parsing " + formula.toString());
       return rewrite(formula).toString();
@@ -182,7 +181,7 @@ public class Rewriter {
         } while (old != expr);
 
         negated = !negated;
-        expr = Formula.parse("!" + expr.toString());
+        expr = Parser.parse("!" + expr.toString());
       } while (changed || negated);
 
       return expr;

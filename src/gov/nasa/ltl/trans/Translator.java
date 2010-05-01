@@ -46,7 +46,7 @@ public class Translator {
 
   public static Graph translate (String formula) {
     try {
-      Formula ltl = Formula.parse(formula);
+      Formula ltl = Parser.parse(formula);
       Node    init = Node.createInitial(ltl);
       State[] states = (init.expand(new Automaton())).structForRuntAnalysis();
       return Automaton.SMoutput(states);
