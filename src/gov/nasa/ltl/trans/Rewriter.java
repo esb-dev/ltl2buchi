@@ -28,8 +28,9 @@ import java.io.StringReader;
  * DOCUMENT ME!
  */
 public class Rewriter {
-  public static Formula applyRule (Formula expr, Formula rule, 
-                                   Formula rewritten) {
+  public static <PropT> Formula<PropT> applyRule (Formula<PropT> expr,
+                                                  Formula<String> rule, 
+                                                  Formula<String> rewritten) {
     return expr.rewrite(rule, rewritten);
   }
 
@@ -40,7 +41,7 @@ public class Rewriter {
     try {
       if (args.length != 0) {
         for (int i = 0; i < args.length; i++) {
-          Formula f = Parser.parse(args[i]);
+          Formula<String> f = Parser.parse(args[i]);
 
           osize += f.size();
           System.out.println(f = rewrite(f));
@@ -64,7 +65,7 @@ public class Rewriter {
               continue;
             }
 
-            Formula f = Parser.parse(line);
+            Formula<String> f = Parser.parse(line);
 
             osize += f.size();
             System.out.println(f = rewrite(f));
@@ -84,8 +85,9 @@ public class Rewriter {
     }
   }
 
-  public static Formula[] readRules () {
-    Formula[] rules = new Formula[0];
+  @SuppressWarnings ("unchecked")
+  public static Formula<String>[] readRules () {
+    Formula<String>[] rules = (Formula<String>[])new Formula[0];
 
     try {
       // Modified by ckong - Sept 7, 2001
@@ -124,9 +126,9 @@ public class Rewriter {
           continue;
         }
 
-        Formula   rule = Parser.parse(line);
+        Formula<String>   rule = Parser.parse(line);
 
-        Formula[] n = new Formula[rules.length + 1];
+        Formula<String>[] n = (Formula<String>[])new Formula[rules.length + 1];
         System.arraycopy(rules, 0, n, 0, rules.length);
         n[rules.length] = rule;
         rules = n;
@@ -143,7 +145,7 @@ public class Rewriter {
   public static String rewrite (String expr) throws ParseErrorException {
     try {
       //   	System.out.println("String is: " + expr);
-      Formula formula = Parser.parse(expr);
+      Formula<String> formula = Parser.parse(expr);
 
       //    	System.out.println("And after parsing " + formula.toString());
       return rewrite(formula).toString();
@@ -152,41 +154,39 @@ public class Rewriter {
     }
   }
 
-  public static Formula rewrite (Formula expr) throws ParseErrorException {
+  public static <PropT> Formula<PropT> rewrite (Formula<PropT> expr)
+    throws ParseErrorException {
     //  	System.out.println("testing if gets in here");
-    Formula[] rules = readRules();
+    Formula<String>[] rules = readRules();
 
     if (rules == null) {
       return expr;
     }
 
-    try {
-      boolean negated = false;
-      boolean changed;
+    boolean negated = false;
+    boolean changed;
+
+    do {
+      Formula<PropT> old;
+      changed = false;
 
       do {
-        Formula old;
-        changed = false;
+        old = expr;
 
-        do {
-          old = expr;
+        for (int i = 0; i < rules.length; i += 2) {
+          expr = applyRule(expr, rules[i], rules[i + 1]);
+        }
 
-          for (int i = 0; i < rules.length; i += 2) {
-            expr = applyRule(expr, rules[i], rules[i + 1]);
-          }
+        if (old != expr) {
+          changed = true;
+        }
+      } while (old != expr);
 
-          if (old != expr) {
-            changed = true;
-          }
-        } while (old != expr);
+      negated = !negated;
+      expr = Formula.Not (expr);
+//        expr = Parser.parse("!" + expr.toString());
+    } while (changed || negated);
 
-        negated = !negated;
-        expr = Parser.parse("!" + expr.toString());
-      } while (changed || negated);
-
-      return expr;
-    } catch (ParseErrorException e) {
-      throw new ParseErrorException(e.getMessage());
-    }
+    return expr;
   }
 }

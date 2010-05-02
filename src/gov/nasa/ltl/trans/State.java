@@ -25,33 +25,33 @@ import java.util.*;
 /**
  * DOCUMENT ME.
  */
-class State {//implements Comparable<State> { // removed (non-conforming) -pcd
+class State<PropT> {//implements Comparable<State> { // removed (non-conforming) -pcd
   private int        representativeId = -1;
-  private LinkedList<Transition> transitions;
+  private LinkedList<Transition<PropT>> transitions;
   private BitSet     accepting;
   private boolean    safety_acceptance;
 
   public State (BitSet acc) {
-    transitions = new LinkedList<Transition>();
+    transitions = new LinkedList<Transition<PropT>>();
     accepting = acc;
     safety_acceptance = false;
   }
 
   public State (BitSet acc, int equivId) {
-    transitions = new LinkedList<Transition>();
+    transitions = new LinkedList<Transition<PropT>>();
     accepting = acc;
     safety_acceptance = false;
     representativeId = equivId;
   }
 
   public State () {
-    transitions = new LinkedList<Transition>();
+    transitions = new LinkedList<Transition<PropT>>();
     accepting = null;
     safety_acceptance = false;
   }
 
   public State (int equivId) {
-    transitions = new LinkedList<Transition>();
+    transitions = new LinkedList<Transition<PropT>>();
     accepting = null;
     safety_acceptance = false;
     representativeId = equivId;
@@ -63,8 +63,8 @@ class State {//implements Comparable<State> { // removed (non-conforming) -pcd
      }
    */
   public void FSPoutput () {
-    ListIterator<Transition> iter = transitions.listIterator(0);
-    Transition   nextTrans;
+    ListIterator<Transition<PropT>> iter = transitions.listIterator(0);
+    Transition<PropT> nextTrans;
     boolean      first_trans = true;
 
     while (iter.hasNext()) {
@@ -83,8 +83,8 @@ class State {//implements Comparable<State> { // removed (non-conforming) -pcd
 
   public void SMoutput (gov.nasa.ltl.graph.Node[] nodes, 
                         gov.nasa.ltl.graph.Node node) {
-    ListIterator<Transition> iter = transitions.listIterator(0);
-    Transition   nextTrans;
+    ListIterator<Transition<PropT>> iter = transitions.listIterator(0);
+    Transition<PropT> nextTrans;
 
     while (iter.hasNext()) {
       nextTrans = iter.next();
@@ -100,11 +100,11 @@ class State {//implements Comparable<State> { // removed (non-conforming) -pcd
 
   // <2do> pcm - CodeGuide Sapphire bug - need to explicitly qualify Transition
   // or it's mocking its use in Node
-  public void add (Transition trans) {
+  public void add (Transition<PropT> trans) {
     transitions.add(trans);
   }
 
-  public int compareTo (State f) {
+  public int compareTo (State<PropT> f) {
     if (this == f) {
       return 0;
     } else {
@@ -124,10 +124,11 @@ class State {//implements Comparable<State> { // removed (non-conforming) -pcd
     representativeId = id;
   }
 
-  public void step (Hashtable<String,Boolean> ProgramState, TreeSet<State> newStates, 
-                    State[] automaton) {
-    ListIterator<Transition> iter = transitions.listIterator(0);
-    Transition   nextTrans;
+  public void step (Hashtable<String,Boolean> ProgramState,
+                    TreeSet<State<PropT>> newStates, 
+                    State<PropT>[] automaton) {
+    ListIterator<Transition<PropT>> iter = transitions.listIterator(0);
+    Transition<PropT> nextTrans;
 
     while (iter.hasNext()) {
       nextTrans = iter.next();

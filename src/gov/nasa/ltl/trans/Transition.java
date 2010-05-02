@@ -26,13 +26,13 @@ import java.util.*;
 /**
  * DOCUMENT ME!
  */
-class Transition {
-  private TreeSet<Formula> propositions;
+class Transition<PropT> {
+  private TreeSet<Formula<PropT>> propositions;
   private int       pointsTo;
   private BitSet    accepting;
   private boolean   safe_accepting;
 
-  public Transition (TreeSet<Formula> prop, int nd_id, BitSet acc, boolean safety) {
+  public Transition (TreeSet<Formula<PropT>> prop, int nd_id, BitSet acc, boolean safety) {
     propositions = prop;
     pointsTo = nd_id;
     accepting = new BitSet(Node.getAcceptingConds());
@@ -45,8 +45,8 @@ class Transition {
       System.out.print("TRUE{");
     } else {
       // first print the propositions involved
-      Iterator<Formula> it = propositions.iterator();
-      Formula       nextForm = null;
+      Iterator<Formula<PropT>> it = propositions.iterator();
+      Formula<PropT> nextForm = null;
       StringBuilder act = new StringBuilder();
       char          cont; // stores content of formula
       boolean       need_AND = false; // connect with AND multiple propositions
@@ -107,8 +107,8 @@ class Transition {
     String action = "-";
 
     if (!propositions.isEmpty()) {
-      Iterator<Formula> it = propositions.iterator();
-      Formula       nextForm = null;
+      Iterator<Formula<PropT>> it = propositions.iterator();
+      Formula<PropT> nextForm = null;
       StringBuilder sb = new StringBuilder();
       char          cont; // stores content of formula
       boolean       need_AND = false; // connect with AND multiple propositions
@@ -169,8 +169,8 @@ class Transition {
   }
 
   public boolean enabled (Hashtable<String,Boolean> ProgramState) {
-    Iterator<Formula> mustHold = propositions.iterator();
-    Formula  form = null;
+    Iterator<Formula<PropT>> mustHold = propositions.iterator();
+    Formula<PropT> form = null;
     Boolean  value;
 
     while (mustHold.hasNext()) {

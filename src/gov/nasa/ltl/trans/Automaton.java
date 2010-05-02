@@ -25,24 +25,24 @@ import gov.nasa.ltl.graph.*;
 /**
  * DOCUMENT ME!
  */
-class LinkNode {
-  private Node     node;
-  private LinkNode next;
+class LinkNode<PropT> {
+  private Node<PropT>     node;
+  private LinkNode<PropT> next;
 
-  public LinkNode (Node nd, LinkNode nxt) {
+  public LinkNode (Node<PropT> nd, LinkNode<PropT> nxt) {
     node = nd;
     next = nxt;
   }
 
-  public LinkNode getNext () {
+  public LinkNode<PropT> getNext () {
     return next;
   }
 
-  public Node getNode () {
+  public Node<PropT> getNode () {
     return node;
   }
 
-  public void LinkWith (LinkNode lk) {
+  public void LinkWith (LinkNode<PropT> lk) {
     next = lk;
   }
 }
@@ -50,17 +50,17 @@ class LinkNode {
 /**
  * DOCUMENT ME!
  */
-class Automaton {
-  private LinkNode head;
-  private LinkNode tail;
-  private Node[]   equivalence_classes; // array of representatives of equivalent states
+class Automaton<PropT> {
+  private LinkNode<PropT> head;
+  private LinkNode<PropT> tail;
+  private Node<PropT>[]   equivalence_classes; // array of representatives of equivalent states
 
   public Automaton () {
     head = tail = null;
     equivalence_classes = null;
   }
 
-  public static void FSPoutput (State[] automaton) {
+  public static <PropT> void FSPoutput (State<PropT>[] automaton) {
     boolean comma = false;
 
     if (automaton == null) {
@@ -91,7 +91,7 @@ class Automaton {
     System.out.println(").\n");
   }
 
-  public static Graph SMoutput (State[] automaton) {
+  public static <PropT> Graph SMoutput (State<PropT>[] automaton) {
     Graph g = new Graph();
     g.setStringAttribute("type", "gba");
     g.setStringAttribute("ac", "edges");
@@ -129,8 +129,8 @@ class Automaton {
     return g;
   }
 
-  public void add (Node nd) {
-    LinkNode newNode = new LinkNode(nd, null);
+  public void add (Node<PropT> nd) {
+    LinkNode<PropT> newNode = new LinkNode<PropT>(nd, null);
 
     if (head == null) // set is currently empty
     {
@@ -142,15 +142,15 @@ class Automaton {
     }
   }
 
-  public Node alreadyThere (Node nd) {
+  public Node<PropT> alreadyThere (Node<PropT> nd) {
     /* when running LTL2Buchi is already there if next fields and 
        accepting conditions are the same. For LTL2AUT, old fields
        also have to be the same
      */
-    LinkNode nextNd = head;
+    LinkNode<PropT> nextNd = head;
 
     while (nextNd != null) {
-      Node currState = nextNd.getNode();
+      Node<PropT> currState = nextNd.getNode();
 
       if (currState.getField_next().equals(nd.getField_next()) && 
               currState.compare_accepting(nd) && 
@@ -172,7 +172,7 @@ class Automaton {
      return equivalence_classes[automaton[automaton_index].get_equivalence_class()].getNodeId();
      }
    */
-  public int index_equivalence (Node nd) {
+  public int index_equivalence (Node<PropT> nd) {
     // check if next field of node is already represented
     int index;
 
@@ -197,20 +197,22 @@ class Automaton {
     return (equivalence_classes[index].getNodeId());
   }
 
-  public State[] structForRuntAnalysis () {
+  @SuppressWarnings ("unchecked")
+  public State<PropT>[] structForRuntAnalysis () {
     // now also fixes equivalence classes
     Pool.stop();
 
     int     automatonSize = Pool.assign();
-    State[] RTstruct = new State[automatonSize];
-    equivalence_classes = new Node[automatonSize];
+    // Java cannot instantiate arrays of generic classes.
+    State<PropT>[] RTstruct = (State<PropT>[])new State[automatonSize];
+    equivalence_classes = (Node<PropT>[])new Node[automatonSize];
 
     if (head == null) {
       return RTstruct;
     }
 
-    LinkNode nextNd = head;
-    Node     current;
+    LinkNode<PropT> nextNd = head;
+    Node<PropT>     current;
 
     while (nextNd != null) {
       current = nextNd.getNode();

@@ -28,7 +28,7 @@ import java.io.*;
  * DOCUMENT ME!
  */
 public class LTL2Buchi {
-	private static boolean debug = false;
+	public static boolean debug = false; // TODO: make this private again... eventually
 
 	public static void main(String[] args) {
 		String ltl = null;
@@ -136,9 +136,6 @@ public class LTL2Buchi {
 			boolean bisim, boolean fair_sim) throws ParseErrorException {
 		//	System.out.println("Translating formula: " + formula);
 		// System.out.println();
-		boolean superset = true;
-		boolean scc = true;
-
 		if (rewrite) {
 			try {
 				formula = Rewriter.rewrite(formula);
@@ -153,6 +150,14 @@ public class LTL2Buchi {
 		if (formula == null) {
 			System.out.println("Unexpected null formula");
 		}
+		
+		return translate(Parser.parse (formula), rewrite, bisim, fair_sim);
+	}
+
+	public static <PropT> Graph translate(Formula<PropT> formula, boolean rewrite,
+	    boolean bisim, boolean fair_sim) {
+	    boolean superset = true;
+        boolean scc = true;
 
 		Graph gba = Translator.translate(formula);
 
@@ -267,6 +272,10 @@ public class LTL2Buchi {
 	public static Graph translate(String formula) throws ParseErrorException {
 		// To work with Bandera and JPF
 		return translate(formula, true, true, true);
+	}
+	
+	public static <PropT> Graph translate(Formula<PropT> formula) {
+	    return translate(formula, true, true, true);
 	}
 
 	public static Graph translate(File file) throws ParseErrorException {

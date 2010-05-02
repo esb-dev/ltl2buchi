@@ -46,12 +46,17 @@ public class Translator {
 
   public static Graph translate (String formula) {
     try {
-      Formula ltl = Parser.parse(formula);
-      Node    init = Node.createInitial(ltl);
-      State[] states = (init.expand(new Automaton())).structForRuntAnalysis();
-      return Automaton.SMoutput(states);
+      Formula<String> ltl = Parser.parse(formula);
+      return translate(ltl);
     } catch (ParseErrorException e) {
       throw new LTLErrorException("parse error: " + e.getMessage());
     }
+  }
+  
+  public static <PropT> Graph translate(Formula<PropT> formula) {
+    Node<PropT> init = Node.createInitial (formula);
+    State<PropT>[] states = 
+      init.expand (new Automaton<PropT>()).structForRuntAnalysis ();
+    return Automaton.SMoutput (states);
   }
 }

@@ -25,37 +25,38 @@ import java.util.*;
 /**
  * DOCUMENT ME!
  */
-class Node implements Comparable<Node> { // removed (non-conforming) -pcd
+class Node<PropT> implements Comparable<Node<PropT>> { // removed (non-conforming) -pcd
   public static int      accepting_conds = 0;
   private static boolean init_collapsed = false;
   private int            nodeId;
-  private TreeSet<Node>        incoming;
-  private TreeSet<Formula>        toBeDone;
-  private TreeSet<Formula>        old;
-  private TreeSet<Formula>        next;
+  private TreeSet<Node<PropT>>    incoming;
+  private TreeSet<Formula<PropT>> toBeDone;
+  private TreeSet<Formula<PropT>> old;
+  private TreeSet<Formula<PropT>> next;
   private BitSet         accepting;
   private BitSet         right_of_untils;
-  private Node           OtherTransitionSource;
+  private Node<PropT>    OtherTransitionSource;
   private int equivalenceId;
 
   public Node () {
     nodeId = Pool.assign();
-    incoming = new TreeSet<Node>();
-    toBeDone = new TreeSet<Formula>();
-    old = new TreeSet<Formula>();
-    next = new TreeSet<Formula>();
+    incoming = new TreeSet<Node<PropT>>();
+    toBeDone = new TreeSet<Formula<PropT>>();
+    old = new TreeSet<Formula<PropT>>();
+    next = new TreeSet<Formula<PropT>>();
     OtherTransitionSource = null;
     accepting = new BitSet(accepting_conds);
     right_of_untils = new BitSet(accepting_conds);
   }
 
-  public Node (TreeSet<Node> in, TreeSet<Formula> newForm, TreeSet<Formula> done, TreeSet<Formula> nx, 
+  public Node (TreeSet<Node<PropT>> in, TreeSet<Formula<PropT>> newForm, 
+               TreeSet<Formula<PropT>> done, TreeSet<Formula<PropT>> nx, 
                BitSet acc, BitSet rous) {
     nodeId = Pool.assign();
-    incoming = new TreeSet<Node>(in);
-    toBeDone = new TreeSet<Formula>(newForm);
-    old = new TreeSet<Formula>(done);
-    next = new TreeSet<Formula>(nx);
+    incoming = new TreeSet<Node<PropT>>(in);
+    toBeDone = new TreeSet<Formula<PropT>>(newForm);
+    old = new TreeSet<Formula<PropT>>(done);
+    next = new TreeSet<Formula<PropT>>(nx);
     OtherTransitionSource = null;
     accepting = new BitSet(accepting_conds);
     accepting.or(acc);
@@ -67,11 +68,11 @@ class Node implements Comparable<Node> { // removed (non-conforming) -pcd
     return accepting_conds;
   }
 
-  public static Node createInitial (Formula form) {
+  public static <PropT> Node<PropT> createInitial (Formula<PropT> form) {
     accepting_conds = form.initialize(); // first mark right forms of untils;
 
     //    System.out.println("Accepting conditions: " + accepting_conds);
-    Node init = new Node();
+    Node<PropT> init = new Node<PropT>();
     init.nodeId = 0;
 
     if (form.getContent() != 't') {
@@ -86,11 +87,11 @@ class Node implements Comparable<Node> { // removed (non-conforming) -pcd
     init_collapsed = false;
   }
 
-  public TreeSet<Formula> getField_next () {
+  public TreeSet<Formula<PropT>> getField_next () {
     return next;
   }
 
-  public TreeSet<Formula> getField_old () {
+  public TreeSet<Formula<PropT>> getField_old () {
     return old;
   }
 
@@ -106,11 +107,11 @@ class Node implements Comparable<Node> { // removed (non-conforming) -pcd
     return nodeId;
   }
 
-  public void RTstructure (State[] RTautomaton) {
+  public void RTstructure (State<PropT>[] RTautomaton) {
     boolean safety = false;
 
     if (RTautomaton[nodeId] == null) {
-      RTautomaton[nodeId] = new State(accepting, equivalenceId);
+      RTautomaton[nodeId] = new State<PropT>(accepting, equivalenceId);
     } else {
       RTautomaton[nodeId].update_acc(accepting, equivalenceId);
     }
@@ -120,11 +121,11 @@ class Node implements Comparable<Node> { // removed (non-conforming) -pcd
       safety = true;
     }
 
-    Node Alternative = this;
+    Node<PropT> Alternative = this;
 
     while (Alternative != null) {
-      Iterator<Node> iterIncom = Alternative.incoming.iterator();
-      Node     nextNode;
+      Iterator<Node<PropT>> iterIncom = Alternative.incoming.iterator();
+      Node<PropT> nextNode;
 
       while (iterIncom.hasNext()) {
         nextNode = iterIncom.next();
@@ -132,18 +133,18 @@ class Node implements Comparable<Node> { // removed (non-conforming) -pcd
         int stateId = nextNode.getId();
 
         if (RTautomaton[stateId] == null) {
-          RTautomaton[stateId] = new State();
+          RTautomaton[stateId] = new State<PropT>();
         }
 
         RTautomaton[stateId].add(
-              new Transition(Alternative.old, equivalenceId, accepting, safety));
+              new Transition<PropT>(Alternative.old, equivalenceId, accepting, safety));
       }
 
       Alternative = Alternative.OtherTransitionSource;
     }
   }
 
-  public int compareTo (Node f) {
+  public int compareTo (Node<PropT> f) {
     if (this == f) {
       return 0;
     } else {
@@ -151,7 +152,7 @@ class Node implements Comparable<Node> { // removed (non-conforming) -pcd
     }
   }
 
-  public boolean compare_accepting (Node nd) {
+  public boolean compare_accepting (Node<PropT> nd) {
     //if (nodeId == 0) 
     //	System.out.println("Has it been collapsed yet? : " + init_collapsed);
     if ((nodeId == 0) && !init_collapsed) {
@@ -178,8 +179,8 @@ class Node implements Comparable<Node> { // removed (non-conforming) -pcd
        }
    */
   public void debug () {
-    Iterator<Formula> iterOld = old.iterator();
-    Formula  nextForm = null;
+    Iterator<Formula<PropT>> iterOld = old.iterator();
+    Formula<PropT> nextForm = null;
 
     System.out.println("debugging now");
     while (iterOld.hasNext()) {
@@ -189,7 +190,7 @@ class Node implements Comparable<Node> { // removed (non-conforming) -pcd
     }
   }
 
-  public void decompose_ands_for_next (Formula form) {
+  public void decompose_ands_for_next (Formula<PropT> form) {
     if (form.getContent() == 'A') {
       decompose_ands_for_next(form.getSub1());
       decompose_ands_for_next(form.getSub2());
@@ -198,9 +199,9 @@ class Node implements Comparable<Node> { // removed (non-conforming) -pcd
     }
   }
 
-  public Automaton expand (Automaton states) {
+  public Automaton<PropT> expand (Automaton<PropT> states) {
     //		System.out.println("expand entered"); // debugging
-    Node tempNode;
+    Node<PropT> tempNode;
 
     if (toBeDone.isEmpty()) {
       if (nodeId != 0) {
@@ -217,7 +218,7 @@ class Node implements Comparable<Node> { // removed (non-conforming) -pcd
 
         return states;
       } else {
-        Node NewN = new Node();
+        Node<PropT> NewN = new Node<PropT>();
         NewN.incoming.add(this);
         NewN.toBeDone.addAll(next);
 
@@ -227,8 +228,8 @@ class Node implements Comparable<Node> { // removed (non-conforming) -pcd
       }
     } else // toBeDone is not empty
     {
-      Formula temp_form;
-      Formula ita = toBeDone.first();
+      Formula<PropT> temp_form;
+      Formula<PropT> ita = toBeDone.first();
       toBeDone.remove(ita);
 
       //System.out.println("\n\nExpanding " + ita + " for node " + nodeId);
@@ -243,7 +244,7 @@ class Node implements Comparable<Node> { // removed (non-conforming) -pcd
         right_of_untils.or(ita.get_rightOfWhichUntils());
       }
 
-      TreeSet<Formula> set_checked_against = new TreeSet<Formula>();
+      TreeSet<Formula<PropT>> set_checked_against = new TreeSet<Formula<PropT>>();
       set_checked_against.addAll(old);
       set_checked_against.addAll(toBeDone);
 
@@ -266,7 +267,7 @@ class Node implements Comparable<Node> { // removed (non-conforming) -pcd
         case 'V':
         case 'O':
 
-          Node node2 = split(ita);
+          Node<PropT> node2 = split(ita);
 
           return node2.expand(this.expand(states));
 
@@ -323,8 +324,9 @@ class Node implements Comparable<Node> { // removed (non-conforming) -pcd
     // just do now the bitwise or so that accepting gets updated
   }
 
-  private static boolean is_redundant (TreeSet<Formula> main_set, TreeSet<Formula> next_set, 
-                                       Formula ita) {
+  private static <PropT> boolean is_redundant (TreeSet<Formula<PropT>> main_set, 
+                                               TreeSet<Formula<PropT>> next_set, 
+                                               Formula<PropT> ita) {
     if ((ita.is_special_case_of_V(main_set)) || // my addition - correct??? 
         ((ita.is_synt_implied(main_set, next_set)) && 
               (!(ita.getContent() == 'U') || 
@@ -341,8 +343,8 @@ class Node implements Comparable<Node> { // removed (non-conforming) -pcd
       return true;
     }
 
-    Iterator<Formula> iterNext = next.iterator();
-    Formula  nextForm = null;
+    Iterator<Formula<PropT>> iterNext = next.iterator();
+    Formula<PropT> nextForm = null;
 
     // all formulas present must be of type V or W, otherwise false
     while (iterNext.hasNext()) {
@@ -356,10 +358,10 @@ class Node implements Comparable<Node> { // removed (non-conforming) -pcd
     return true;
   }
 
-  private void modify (Node current) {
+  private void modify (Node<PropT> current) {
     boolean match = false;
-    Node    Tail = this;
-    Node    Alternative = this;
+    Node<PropT> Tail = this;
+    Node<PropT> Alternative = this;
 
     if ((this.nodeId == 0) && !init_collapsed) {
       accepting = current.accepting;
@@ -381,13 +383,14 @@ class Node implements Comparable<Node> { // removed (non-conforming) -pcd
     }
   }
 
-  private Node split (Formula form) {
+  private Node<PropT> split (Formula<PropT> form) {
     //System.out.println("Split is entered");
-    Formula temp_form;
+    Formula<PropT> temp_form;
 
     // first create Node 2
-    Node Node2 = new Node(this.incoming, this.toBeDone, this.old, this.next, 
-                          this.accepting, this.right_of_untils);
+    Node<PropT> Node2 = new Node<PropT>(this.incoming, this.toBeDone,
+                                        this.old, this.next, 
+                                        this.accepting, this.right_of_untils);
 
     temp_form = form.getSub2();
 
@@ -438,8 +441,8 @@ class Node implements Comparable<Node> { // removed (non-conforming) -pcd
     return Node2;
   }
 
-  private boolean testForContradictions (Formula ita) {
-    Formula Not_ita = ita.negate();
+  private boolean testForContradictions (Formula<PropT> ita) {
+    Formula<PropT> Not_ita = ita.negate();
 
     if (Not_ita.is_synt_implied(old, next)) {
       return true;

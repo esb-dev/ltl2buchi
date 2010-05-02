@@ -60,16 +60,16 @@ public class Parser {
   static class EndOfInputException extends Exception {
   }
 
-  static Formula parse (String str) throws ParseErrorException { // "aObAc"
+  static Formula<String> parse (String str) throws ParseErrorException { // "aObAc"
 
     Input i = new Input (str);
 
     return parse (i, P_ALL);
   }
 
-  private static Formula parse (Input i, int precedence) throws ParseErrorException {
+  private static Formula<String> parse (Input i, int precedence) throws ParseErrorException {
     try {
-      Formula formula;
+      Formula<String> formula;
       char ch;
 
       while (i.get () == ' ') {

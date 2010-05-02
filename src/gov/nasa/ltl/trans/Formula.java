@@ -25,25 +25,41 @@ package gov.nasa.ltl.trans;
 
 import java.util.*;
 
-
+/*
+ * TODO: factor the unification algorithm built around the matches
+ * table out into a separate class, maybe along with the rewriting
+ * code.
+ */
 /**
  * DOCUMENT ME!
  */
-public class Formula implements Comparable<Formula> {
+public class Formula<PropT> implements Comparable<Formula<PropT>> {
   private static int       nId = 0;
-  private static Hashtable<String, Formula> ht = new Hashtable<String, Formula>();
-  private static Hashtable<String, Formula> matches = new Hashtable<String, Formula>();
+  /* TODO: Using Object instead of Formula<PropT> for ht and
+   * matches means a loss of compile-time type safety, but it’s not
+   * possible to use the type parameter for these static variables.
+   * Should find a better way to do these things.
+   * 
+   * These declarations are intended like this:
+   * private static Hashtable<String, Formula<?>> ht = ...;
+   * private static Hashtable<String, Formula<?>> matches = ...;
+   * where ? is PropT.
+   */
+  private static Hashtable<String, Object> ht =
+    new Hashtable<String, Object>();
+  private static Hashtable<String, Object> matches =
+    new Hashtable<String, Object>();
   private char             content;
   private boolean          literal;
-  private Formula          left;
-  private Formula          right;
+  private Formula<PropT>   left;
+  private Formula<PropT>   right;
   private int              id;
   private int              untils_index; // index to the untils vector
   private BitSet           rightOfWhichUntils; // for bug fix - formula can be right of >1 untils
-  private String           name;
+  private PropT            name;
   private boolean          has_been_visited;
 
-  private Formula (char c, boolean l, Formula sx, Formula dx, String n) {
+  private Formula (char c, boolean l, Formula<PropT> sx, Formula<PropT> dx, PropT n) {
     id = nId++;
     content = c;
     literal = l;
@@ -90,11 +106,11 @@ public class Formula implements Comparable<Formula> {
     return content;
   }
 
-  public String getName () {
+  public PropT getName () {
     return name;
   }
 
-  public Formula getNext () {
+  public Formula<PropT> getNext () {
     switch (content) {
     case 'U':
     case 'W':
@@ -113,7 +129,7 @@ public class Formula implements Comparable<Formula> {
     }
   }
 
-  public Formula getSub1 () {
+  public Formula<PropT> getSub1 () {
     if (content == 'V') {
       return right;
     } else {
@@ -121,7 +137,7 @@ public class Formula implements Comparable<Formula> {
     }
   }
 
-  public Formula getSub2 () {
+  public Formula<PropT> getSub2 () {
     if (content == 'V') {
       return left;
     } else {
@@ -129,15 +145,15 @@ public class Formula implements Comparable<Formula> {
     }
   }
 
-  public void addLeft (Formula l) {
+  public void addLeft (Formula<PropT> l) {
     left = l;
   }
 
-  public void addRight (Formula r) {
+  public void addRight (Formula<PropT> r) {
     right = r;
   }
 
-  public int compareTo (Formula f) {
+  public int compareTo (Formula<PropT> f) {
     return (this.id - f.id);
   }
 
@@ -187,8 +203,10 @@ public class Formula implements Comparable<Formula> {
     return (rightOfWhichUntils != null);
   }
 
-  public boolean is_special_case_of_V (TreeSet<Formula> check_against) {
-    Formula form = (Release(False(), this));
+  public boolean is_special_case_of_V (TreeSet<Formula<PropT>> check_against) {
+    // necessary for Java’s type inference to do its work 
+    Formula<PropT> tmp = False();
+    Formula<PropT> form = Release(tmp, this);
 
     if (check_against.contains(form)) {
       return true;
@@ -197,7 +215,7 @@ public class Formula implements Comparable<Formula> {
     }
   }
 
-  public boolean is_synt_implied (TreeSet<Formula> old, TreeSet<Formula> next) {
+  public boolean is_synt_implied (TreeSet<Formula<PropT>> old, TreeSet<Formula<PropT>> next) {
     if (this.getContent() == 't') {
       return true;
     }
@@ -208,9 +226,9 @@ public class Formula implements Comparable<Formula> {
 
     if (!is_literal()) // non-elementary formula
     {
-      Formula form1 = this.getSub1();
-      Formula form2 = this.getSub2();
-      Formula form3 = this.getNext();
+      Formula<PropT> form1 = this.getSub1();
+      Formula<PropT> form2 = this.getSub2();
+      Formula<PropT> form3 = this.getNext();
 
       boolean condition1;
       boolean condition2;
@@ -272,7 +290,7 @@ public class Formula implements Comparable<Formula> {
     }
   }
 
-  public Formula negate () {
+  public Formula<PropT> negate () {
     return Not(this);
   }
 
@@ -313,7 +331,7 @@ public class Formula implements Comparable<Formula> {
     }
   }
 
-  public Formula rewrite (Formula rule, Formula rewritten) {
+  public Formula<PropT> rewrite (Formula<String> rule, Formula<String> rewritten) {
     switch (content) {
     case 'A':
     case 'O':
@@ -338,7 +356,7 @@ public class Formula implements Comparable<Formula> {
     }
 
     if (match(rule)) {
-      Formula expr = rewritten.rewrite();
+      Formula<PropT> expr = rewrite(rewritten);
 
       clearMatches();
 
@@ -453,35 +471,39 @@ public class Formula implements Comparable<Formula> {
     }
   }
 
-  static Formula Always (Formula f) {
-    return unique(new Formula('V', false, False(), f, null));
+  public static <PropT> Formula<PropT> Always (Formula<PropT> f) {
+    // necessary for Java’s type inference to do its work 
+    Formula<PropT> tmp = False();
+    return unique(new Formula<PropT>('V', false, tmp, f, null));
   }
 
-  static Formula And (Formula sx, Formula dx) {
+  public static <PropT> Formula<PropT> And (Formula<PropT> sx, Formula<PropT> dx) {
     if (sx.id < dx.id) {
-      return unique(new Formula('A', false, sx, dx, null));
+      return unique(new Formula<PropT>('A', false, sx, dx, null));
     } else {
-      return unique(new Formula('A', false, dx, sx, null));
+      return unique(new Formula<PropT>('A', false, dx, sx, null));
     }
   }
 
-  static Formula Eventually (Formula f) {
-    return unique(new Formula('U', false, True(), f, null));
+  public static <PropT> Formula<PropT> Eventually (Formula<PropT> f) {
+    // necessary for Java’s type inference to do its work 
+    Formula<PropT> tmp = True();
+    return unique(new Formula<PropT>('U', false, tmp, f, null));
   }
 
-  static Formula False () {
-    return unique(new Formula('f', true, null, null, null));
+  public static <PropT> Formula<PropT> False () {
+    return unique(new Formula<PropT>('f', true, null, null, null));
   }
 
-  static Formula Implies (Formula sx, Formula dx) {
+  public static <PropT> Formula<PropT> Implies (Formula<PropT> sx, Formula<PropT> dx) {
     return Or(Not(sx), dx);
   }
 
-  static Formula Next (Formula f) {
-    return unique(new Formula('X', false, f, null, null));
+  public static <PropT> Formula<PropT> Next (Formula<PropT> f) {
+    return unique(new Formula<PropT>('X', false, f, null, null));
   }
 
-  static Formula Not (Formula f) {
+  public static <PropT> Formula<PropT> Not (Formula<PropT> f) {
     if (f.literal) {
       switch (f.content) {
       case 't':
@@ -494,7 +516,7 @@ public class Formula implements Comparable<Formula> {
         return f.left;
 
       default:
-        return unique(new Formula('N', true, f, null, null));
+        return unique(new Formula<PropT>('N', true, f, null, null));
       }
     }
 
@@ -527,69 +549,71 @@ public class Formula implements Comparable<Formula> {
     }
   }
 
-  static Formula Or (Formula sx, Formula dx) {
+  public static <PropT> Formula<PropT> Or (Formula<PropT> sx, Formula<PropT> dx) {
     if (sx.id < dx.id) {
-      return unique(new Formula('O', false, sx, dx, null));
+      return unique(new Formula<PropT>('O', false, sx, dx, null));
     } else {
-      return unique(new Formula('O', false, dx, sx, null));
+      return unique(new Formula<PropT>('O', false, dx, sx, null));
     }
   }
 
-  static Formula Proposition (String name) {
-    return unique(new Formula('p', true, null, null, name));
+  public static <PropT> Formula<PropT> Proposition (PropT name) {
+    return unique(new Formula<PropT>('p', true, null, null, name));
   }
 
-  static Formula Release (Formula sx, Formula dx) {
-    return unique(new Formula('V', false, sx, dx, null));
+  public static <PropT> Formula<PropT> Release (Formula<PropT> sx, Formula<PropT> dx) {
+    return unique(new Formula<PropT>('V', false, sx, dx, null));
   }
 
-  static Formula True () {
-    return unique(new Formula('t', true, null, null, null));
+  public static <PropT> Formula<PropT> True () {
+    return unique(new Formula<PropT>('t', true, null, null, null));
   }
 
-  static Formula Until (Formula sx, Formula dx) {
-    return unique(new Formula('U', false, sx, dx, null));
+  public static <PropT> Formula<PropT> Until (Formula<PropT> sx, Formula<PropT> dx) {
+    return unique(new Formula<PropT>('U', false, sx, dx, null));
   }
 
-  static Formula WRelease (Formula sx, Formula dx) {
-    return unique(new Formula('U', false, dx, And(sx, dx), null));
+  public static <PropT> Formula<PropT> WRelease (Formula<PropT> sx, Formula<PropT> dx) {
+    return unique(new Formula<PropT>('U', false, dx, And(sx, dx), null));
   }
 
-  static Formula WUntil (Formula sx, Formula dx) {
-    return unique(new Formula('W', false, sx, dx, null));
+  public static <PropT> Formula<PropT> WUntil (Formula<PropT> sx, Formula<PropT> dx) {
+    return unique(new Formula<PropT>('W', false, sx, dx, null));
   }
 
   private static void clearHT () {
-    ht = new Hashtable<String, Formula>();
+    ht = new Hashtable<String, Object>();
   }
 
   private static void clearMatches () {
-    matches = new Hashtable<String, Formula>();
+    matches = new Hashtable<String, Object>();
   }
 
-  private static Formula unique (Formula f) {
+  @SuppressWarnings ("unchecked")
+  private static <PropT> Formula<PropT> unique (Formula<PropT> f) {
     String s = f.toString();
 
     if (ht.containsKey(s)) {
-      return ht.get(s);
+      return (Formula<PropT>) ht.get(s);
     }
 
-    ht.put(s, f);
+    ht.put(s, (Formula<Object>) f);
 
     return f;
   }
 
-  private Formula getMatch (String name) {
-    return matches.get(name);
+  @SuppressWarnings ("unchecked")
+  private static <PropT> Formula<PropT> getMatch (String name) {
+    return (Formula<PropT>) matches.get(name);
   }
 
-  private void addMatch (String name, Formula expr) {
+  private void addMatch (String name, Formula<PropT> expr) {
     matches.put(name, expr);
   }
 
-  private boolean match (Formula rule) {
+  private boolean match (Formula<String> rule) {
     if (rule.content == 'p') {
-      Formula match = getMatch(rule.name);
+      Formula<PropT> match = getMatch(rule.name);
 
       if (match == null) {
         addMatch(rule.name, this);
@@ -604,7 +628,7 @@ public class Formula implements Comparable<Formula> {
       return false;
     }
 
-    Hashtable<String, Formula> saved = new Hashtable<String, Formula>(matches);
+    Hashtable<String, Object> saved = new Hashtable<String, Object>(matches);
 
     switch (content) {
     case 'A':
@@ -655,40 +679,54 @@ public class Formula implements Comparable<Formula> {
     throw new RuntimeException("code should not be reached");
   }
 
-  private Formula rewrite () {
-    if (content == 'p') {
-      return getMatch(name);
-    }
-
-    switch (content) {
+  private static <PropT> Formula<PropT> rewrite (Formula<String> f) {
+    Formula<PropT> r = null, s, t;
+    // This is a bit verbose, to make type inference happen.
+    switch (f.content) {
+    case 'p':
+      r = getMatch(f.name);
+      break;
     case 'A':
-      return And(left.rewrite(), right.rewrite());
-
+      s = rewrite(f.left);
+      t = rewrite(f.right);
+      r = And(s, t);
+      break;
     case 'O':
-      return Or(left.rewrite(), right.rewrite());
-
+      s = rewrite(f.left);
+      t = rewrite(f.right);
+      r = Or(s, t);
+      break;
     case 'U':
-      return Until(left.rewrite(), right.rewrite());
-
+      s = rewrite(f.left);
+      t = rewrite(f.right);
+      r = Until(s, t);
+      break;
     case 'V':
-      return Release(left.rewrite(), right.rewrite());
-
+      s = rewrite(f.left);
+      t = rewrite(f.right);
+      r = Release(s, t);
+      break;
     case 'W':
-      return WUntil(left.rewrite(), right.rewrite());
-
+      s = rewrite(f.left);
+      t = rewrite(f.right);
+      r = WUntil(s, t);
+      break;
     case 'X':
-      return Next(left.rewrite());
-
+      s = rewrite(f.left);
+      r = Next(s);
+      break;
     case 'N':
-      return Not(left.rewrite());
-
+      s = rewrite(f.left);
+      r = Not(s);
+      break;
     case 't':
-      return True();
-
+      r = True();
+      break;
     case 'f':
-      return False();
+      r = False();
     }
-
+    if(r != null)
+      return r;
     throw new RuntimeException("code should not be reached");
   }
 }
