@@ -18,6 +18,8 @@
 //
 package gov.nasa.ltl.graph;
 
+import gov.nasa.ltl.graphio.Reader;
+
 import java.io.IOException;
 
 
@@ -38,17 +40,17 @@ public class SM2Dot {
     }
 
     try {
-      Graph g = Graph.load(args[0]);
+      Graph<String> g = Reader.read(args[0]);
 
       startDigraph(args[0]);
 
       printInit(g.getInit());
 
-      g.forAllNodes(new EmptyVisitor() {
-        public void visitNode (Node n) {
+      g.forAllNodes(new EmptyVisitor<String>() {
+        public void visitNode (Node<String> n) {
           printNode(n);
-          n.forAllEdges(new EmptyVisitor() {
-            public void visitEdge (Edge e) {
+          n.forAllEdges(new EmptyVisitor<String>() {
+            public void visitEdge (Edge<String> e) {
               printEdge(e);
             }
           });
@@ -61,10 +63,10 @@ public class SM2Dot {
     }
   }
 
-  public static void printEdge (Edge e) {
+  public static void printEdge (Edge<String> e) {
     int          id = e.getSource().getId();
     int          nxt = e.getNext().getId();
-    String       guard = e.getGuard();
+    String       guard = e.getGuard().toString (); // TODO: Fix me!
     String       action = e.getAction();
     String       label = e.getStringAttribute("label");
 
@@ -113,12 +115,12 @@ public class SM2Dot {
     System.out.println(sb.toString());
   }
 
-  public static void printInit (Node n) {
+  public static void printInit (Node<String> n) {
     System.out.println("\tinit [color=white, label=\"\"];");
     System.out.println("\tinit -> " + n.getId() + ";");
   }
 
-  public static void printNode (Node n) {
+  public static void printNode (Node<String> n) {
     int id = n.getId();
 
     if (n.getBooleanAttribute("accepting")) {

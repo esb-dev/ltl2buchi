@@ -21,8 +21,8 @@ package gov.nasa.ltl.graph;
 /**
  * DOCUMENT ME!
  */
-public interface Visitor {
-  void visitEdge (Edge e);
+public interface Visitor<PropT> {
+  void visitEdge (Edge<PropT> e);
 
-  void visitNode (Node n);
+  void visitNode (Node<PropT> n);
 }

@@ -27,32 +27,32 @@ import java.util.List;
 /**
  * DOCUMENT ME!
  */
-public class Node {
-	private Graph graph;
+public class Node<PropT> {
+	private Graph<PropT> graph;
 
-	private List<Edge> outgoingEdges;
+	private List<Edge<PropT>> outgoingEdges;
 
-	private List<Edge> incomingEdges;
+	private List<Edge<PropT>> incomingEdges;
 
 	private Attributes attributes;
 
-	public Node(Graph g, Attributes a) {
+	public Node(Graph<PropT> g, Attributes a) {
 		init(g, a);
 	}
 
-	public Node(Graph g) {
+	public Node(Graph<PropT> g) {
 		init(g, null);
 	}
 
-	public Node(Node n) {
+	public Node(Node<PropT> n) {
 		init(n.graph, new Attributes(n.attributes));
 
-		for (Iterator<Edge> i = n.outgoingEdges.iterator(); i.hasNext();) {
-			new Edge(this, i.next());
+		for (Edge<PropT> e: n.outgoingEdges) {
+			new Edge<PropT>(this, e);
 		}
 
-		for (Iterator<Edge> i = n.incomingEdges.iterator(); i.hasNext();) {
-			new Edge(i.next(), this);
+		for (Edge<PropT> e: n.incomingEdges) {
+			new Edge<PropT>(e, this);
 		}
 	}
 
@@ -78,7 +78,7 @@ public class Node {
 		return attributes.getBoolean(name);
 	}
 
-	public Graph getGraph() {
+	public Graph<PropT> getGraph() {
 		return graph;
 	}
 
@@ -90,8 +90,8 @@ public class Node {
 		return outgoingEdges.size();
 	}
 
-	public List<Edge> getIncomingEdges() {
-		return new LinkedList<Edge>(incomingEdges);
+	public List<Edge<PropT>> getIncomingEdges() {
+		return new LinkedList<Edge<PropT>>(incomingEdges);
 	}
 
 	public synchronized void setIntAttribute(String name, int value) {
@@ -110,8 +110,8 @@ public class Node {
 		return outgoingEdges.size();
 	}
 
-	public List<Edge> getOutgoingEdges() {
-		return new LinkedList<Edge>(outgoingEdges);
+	public List<Edge<PropT>> getOutgoingEdges() {
+		return new LinkedList<Edge<PropT>>(outgoingEdges);
 	}
 
 	public synchronized void setStringAttribute(String name, String value) {
@@ -126,19 +126,21 @@ public class Node {
 		return attributes.getString(name);
 	}
 
-	public synchronized void forAllEdges(Visitor v) {
-		for (Iterator<Edge> i = new LinkedList<Edge>(outgoingEdges).iterator(); i.hasNext();) {
-			v.visitEdge(i.next());
+	public synchronized void forAllEdges(Visitor<PropT> v) {
+	    LinkedList<Edge<PropT>> l = new LinkedList<Edge<PropT>>(outgoingEdges);
+		for (Edge<PropT> e: l) {
+			v.visitEdge(e);
 		}
 	}
 
 	public synchronized void remove() {
-		for (Iterator<Edge> i = new LinkedList<Edge>(outgoingEdges).iterator(); i.hasNext();) {
-			i.next().remove();
+        LinkedList<Edge<PropT>> l = new LinkedList<Edge<PropT>>(outgoingEdges);
+		for (Edge<PropT> e: l) {
+			e.remove();
 		}
-
-		for (Iterator<Edge> i = new LinkedList<Edge>(incomingEdges).iterator(); i.hasNext();) {
-			i.next().remove();
+        LinkedList<Edge<PropT>> k = new LinkedList<Edge<PropT>>(incomingEdges);
+		for (Edge<PropT> e: k) {
+			e.remove();
 		}
 
 		graph.removeNode(this);
@@ -148,19 +150,19 @@ public class Node {
 		attributes.setInt("_id", id);
 	}
 
-	synchronized void addIncomingEdge(Edge e) {
+	synchronized void addIncomingEdge(Edge<PropT> e) {
 		incomingEdges.add(e);
 	}
 
-	synchronized void addOutgoingEdge(Edge e) {
+	synchronized void addOutgoingEdge(Edge<PropT> e) {
 		outgoingEdges.add(e);
 	}
 
-	synchronized void removeIncomingEdge(Edge e) {
+	synchronized void removeIncomingEdge(Edge<PropT> e) {
 		incomingEdges.remove(e);
 	}
 
-	synchronized void removeOutgoingEdge(Edge e) {
+	synchronized void removeOutgoingEdge(Edge<PropT> e) {
 		outgoingEdges.remove(e);
 	}
 
@@ -173,7 +175,7 @@ public class Node {
 			break;
 
 		case Graph.FSP_FORMAT:
-			save_fsp(out);
+//			save_fsp(out);
 
 			break;
 
@@ -192,7 +194,7 @@ public class Node {
 		}
 	}
 
-	private void init(Graph g, Attributes a) {
+	private void init(Graph<PropT> g, Attributes a) {
 		graph = g;
 
 		if (a == null) {
@@ -201,14 +203,14 @@ public class Node {
 			attributes = a;
 		}
 
-		incomingEdges = new LinkedList<Edge>();
-		outgoingEdges = new LinkedList<Edge>();
+		incomingEdges = new LinkedList<Edge<PropT>>();
+		outgoingEdges = new LinkedList<Edge<PropT>>();
 
 		graph.addNode(this);
 	}
 
 	// Modified by ckong - Sept 7, 2001
-	private void save_fsp(PrintStream out) {
+	/*private void save_fsp(PrintStream out) {
 		///System.out.print("S" + getId() + "=(");
 		out.print("S" + getId() + "=(");
 
@@ -223,7 +225,7 @@ public class Node {
 
 		//System.out.print(")");
 		out.print(")");
-	}
+	}*/ // TODO
 
 	private void save_sm(PrintStream out) {
 		int id = getId();
@@ -234,7 +236,7 @@ public class Node {
 		out.println(attributes);
 		setId(id);
 
-		for (Iterator<Edge> i = outgoingEdges.iterator(); i.hasNext();) {
+		for (Iterator<Edge<PropT>> i = outgoingEdges.iterator(); i.hasNext();) {
 			i.next().save(out, Graph.SM_FORMAT);
 		}
 	}
@@ -250,8 +252,8 @@ public class Node {
 
 		out.print("S" + getId() + ":" + ln + "     if" + lntab);
 
-		for (Iterator<Edge> i = outgoingEdges.iterator(); i.hasNext();) {
-			Edge e = i.next();
+		for (Iterator<Edge<PropT>> i = outgoingEdges.iterator(); i.hasNext();) {
+			Edge<PropT> e = i.next();
 			e.save(out, Graph.SPIN_FORMAT);
 
 			if (i.hasNext()) {
@@ -269,7 +271,7 @@ public class Node {
 		attributes.save(out, Graph.XML_FORMAT);
 		setId(id);
 
-		for (Iterator<Edge> i = outgoingEdges.iterator(); i.hasNext();) {
+		for (Iterator<Edge<PropT>> i = outgoingEdges.iterator(); i.hasNext();) {
 			i.next().save(out, Graph.XML_FORMAT);
 		}
 

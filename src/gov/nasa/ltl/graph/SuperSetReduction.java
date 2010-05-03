@@ -18,6 +18,8 @@
 //
 package gov.nasa.ltl.graph;
 
+import gov.nasa.ltl.graphio.Reader;
+
 import java.io.*;
 
 /**
@@ -33,13 +35,13 @@ public class SuperSetReduction {
       return;
     }
 
-    Graph g = null;
+    Graph<String> g = null;
 
     try {
       if (args.length == 0) {
-        g = Graph.load();
+        g = Reader.read();
       } else {
-        g = Graph.load(args[0]);
+        g = Reader.read(args[0]);
       }
     } catch (IOException e) {
       System.out.println("Can't load the graph.");
@@ -52,7 +54,8 @@ public class SuperSetReduction {
     g.save();
   }
 
-  public static Graph reduce (Graph g) {
+  @SuppressWarnings ("unchecked")
+  public static <PropT> Graph<PropT> reduce (Graph<PropT> g) {
     final int nsets = g.getIntAttribute("nsets");
     String    type = g.getStringAttribute("type");
     String    ac = g.getStringAttribute("ac");
@@ -66,8 +69,8 @@ public class SuperSetReduction {
 
       final boolean[][] asets = new boolean[nsets][nnodes];
 
-      g.forAllNodes(new EmptyVisitor() {
-        public void visitNode (Node n) {
+      g.forAllNodes(new EmptyVisitor<PropT>() {
+        public void visitNode (Node<PropT> n) {
           for (int i = 0; i < nsets; i++) {
             String acc = "acc" + i;
 
@@ -112,7 +115,7 @@ public class SuperSetReduction {
       g.setIntAttribute("nsets", n_nsets);
 
       for (int i = 0; i < nnodes; i++) {
-        Node n = g.getNode(i);
+        Node<PropT> n = g.getNode(i);
 
         for (int j = 0; j < n_nsets; j++) {
           if (n_asets[j][i]) {
@@ -126,10 +129,10 @@ public class SuperSetReduction {
       final int         nedges = g.getEdgeCount();
 
       final boolean[][] asets = new boolean[nsets][nedges];
-      final Edge[]      edges = new Edge[nedges];
+      final Edge<PropT>[] edges = new Edge[nedges];
 
-      g.forAllEdges(new EmptyVisitor(new Integer(0)) {
-        public void visitEdge (Edge e) {
+      g.forAllEdges(new EmptyVisitor<PropT>(new Integer(0)) {
+        public void visitEdge (Edge<PropT> e) {
           int id = ((Integer) arg).intValue();
           arg = new Integer(id + 1);
 
@@ -179,7 +182,7 @@ public class SuperSetReduction {
       g.setIntAttribute("nsets", n_nsets);
 
       for (int i = 0; i < nedges; i++) {
-        Edge e = edges[i];
+        Edge<PropT> e = edges[i];
 
         for (int j = 0; j < n_nsets; j++) {
           if (n_asets[j][i]) {

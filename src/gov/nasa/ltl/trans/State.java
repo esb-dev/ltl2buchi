@@ -25,7 +25,7 @@ import java.util.*;
 /**
  * DOCUMENT ME.
  */
-class State<PropT> {//implements Comparable<State> { // removed (non-conforming) -pcd
+public class State<PropT> {//implements Comparable<State> { // removed (non-conforming) -pcd
   private int        representativeId = -1;
   private LinkedList<Transition<PropT>> transitions;
   private BitSet     accepting;
@@ -81,8 +81,8 @@ class State<PropT> {//implements Comparable<State> { // removed (non-conforming)
     }
   }
 
-  public void SMoutput (gov.nasa.ltl.graph.Node[] nodes, 
-                        gov.nasa.ltl.graph.Node node) {
+  public void SMoutput (gov.nasa.ltl.graph.Node<PropT>[] nodes, 
+                        gov.nasa.ltl.graph.Node<PropT> node) {
     ListIterator<Transition<PropT>> iter = transitions.listIterator(0);
     Transition<PropT> nextTrans;
 
@@ -150,5 +150,12 @@ class State<PropT> {//implements Comparable<State> { // removed (non-conforming)
 
   public void update_safety_acc (boolean val) {
     safety_acceptance = val;
+  }
+
+  /**
+   * @return the transitions
+   */
+  public LinkedList<Transition<PropT>> getTransitions () {
+    return transitions;
   }
 }

@@ -18,10 +18,11 @@
 //
 package gov.nasa.ltl.graph;
 
+import gov.nasa.ltl.graphio.Reader;
+
 import java.io.*;
 
 import java.util.BitSet;
-import java.util.Iterator;
 import java.util.List;
 
 
@@ -37,13 +38,13 @@ public class SCCReduction {
       return;
     }
 
-    Graph g = null;
+    Graph<String> g = null;
 
     try {
       if (args.length == 0) {
-        g = Graph.load();
+        g = Reader.read();
       } else {
-        g = Graph.load(args[0]);
+        g = Reader.read(args[0]);
       }
     } catch (IOException e) {
       System.out.println("Can't load the graph.");
@@ -56,31 +57,30 @@ public class SCCReduction {
     g.save();
   }
 
-  public static Graph reduce (Graph g) {
+  public static <PropT> Graph<PropT> reduce (Graph<PropT> g) {
     boolean changed;
     /* not needed? - pcd
     String  type = g.getStringAttribute("type");
     String  ac = g.getStringAttribute("ac");
     boolean acNodes = ac.equals("nodes");*/
 
-    for (Iterator<List<Node>> i = SCC.scc(g).iterator(); i.hasNext();) {
-      clearExternalEdges(i.next(), g);
+    for (List<Node<PropT>> l: SCC.scc (g)) {
+      clearExternalEdges(l, g);
     }
 
     do {
       changed = false;
 
-      List<List<Node>> sccs = SCC.scc(g);
+      List<List<Node<PropT>>> sccs = SCC.scc(g);
 
-      for (Iterator<List<Node>> i = sccs.iterator(); i.hasNext();) {
-        List<Node>  scc = i.next();
+      for (List<Node<PropT>> scc: sccs) {
         boolean accepting = isAccepting(scc, g);
 
         if (!accepting && isTerminal(scc)) {
           changed = true;
 
-          for (Iterator<Node> j = scc.iterator(); j.hasNext();) {
-            j.next().remove();
+          for (Node<PropT> n: scc) {
+            n.remove();
           }
         } else if (isTransient(scc) || !accepting) {
           changed |= anyAcceptingState(scc, g);
@@ -92,26 +92,22 @@ public class SCCReduction {
     return g;
   }
 
-  private static boolean isAccepting (List<Node> scc, Graph g) {
+  private static <PropT> boolean isAccepting (List<Node<PropT>> scc, Graph<PropT> g) {
     String type = g.getStringAttribute("type");
     String ac = g.getStringAttribute("ac");
 
     if (type.equals("ba")) {
       if (ac.equals("nodes")) {
-        for (Iterator<Node> i = scc.iterator(); i.hasNext();) {
-          if (i.next().getBooleanAttribute("accepting")) {
+        for (Node<PropT> n: scc) {
+          if (n.getBooleanAttribute("accepting")) {
             return true;
           }
         }
 
         return false;
       } else if (ac.equals("edges")) {
-        for (Iterator<Node> i = scc.iterator(); i.hasNext();) {
-          Node n = i.next();
-
-          for (Iterator<Edge> j = n.getOutgoingEdges().iterator(); j.hasNext();) {
-            Edge e = j.next();
-
+        for (Node<PropT> n: scc) {
+          for (Edge<PropT> e: n.getOutgoingEdges ()) {
             if (e.getBooleanAttribute("accepting")) {
               return true;
             }
@@ -128,9 +124,7 @@ public class SCCReduction {
       int    nsccs = 0;
 
       if (ac.equals("nodes")) {
-        for (Iterator<Node> i = scc.iterator(); i.hasNext();) {
-          Node n = i.next();
-
+        for (Node<PropT> n: scc) {
           for (int j = 0; j < nsets; j++) {
             if (n.getBooleanAttribute("acc" + j)) {
               if (!found.get(j)) {
@@ -141,12 +135,8 @@ public class SCCReduction {
           }
         }
       } else if (ac.equals("edges")) {
-        for (Iterator<Node> i = scc.iterator(); i.hasNext();) {
-          Node n = i.next();
-
-          for (Iterator<Edge> j = n.getOutgoingEdges().iterator(); j.hasNext();) {
-            Edge e = j.next();
-
+        for (Node<PropT> n: scc) {
+          for (Edge<PropT> e: n.getOutgoingEdges ()) {
             for (int k = 0; k < nsets; k++) {
               if (e.getBooleanAttribute("acc" + k)) {
                 if (!found.get(k)) {
@@ -167,12 +157,10 @@ public class SCCReduction {
     }
   }
 
-  private static boolean isTerminal (List<Node> scc) {
-    for (Iterator<Node> i = scc.iterator(); i.hasNext();) {
-      Node n = i.next();
-
-      for (Iterator<Edge> j = n.getOutgoingEdges().iterator(); j.hasNext();) {
-        if (!scc.contains((j.next()).getNext())) {
+  private static <PropT> boolean isTerminal (List<Node<PropT>> scc) {
+    for (Node<PropT> n: scc) {
+      for (Edge<PropT> e: n.getOutgoingEdges ()) {
+        if (!scc.contains(e.getNext())) {
           return false;
         }
       }
@@ -181,15 +169,15 @@ public class SCCReduction {
     return true;
   }
 
-  private static boolean isTransient (List<Node> scc) {
+  private static <PropT> boolean isTransient (List<Node<PropT>> scc) {
     if (scc.size() != 1) {
       return false;
     }
 
-    Node n = scc.get(0);
+    Node<PropT> n = scc.get(0);
 
-    for (Iterator<Edge> i = n.getOutgoingEdges().iterator(); i.hasNext();) {
-      if ((i.next()).getNext() == n) {
+    for (Edge<PropT> e: n.getOutgoingEdges ()) {
+      if (e.getNext() == n) {
         return false;
       }
     }
@@ -197,26 +185,20 @@ public class SCCReduction {
     return true;
   }
 
-  private static boolean anyAcceptingState (List<Node> scc, Graph g) {
+  private static <PropT> boolean anyAcceptingState (List<Node<PropT>> scc, Graph<PropT> g) {
     String type = g.getStringAttribute("type");
     String ac = g.getStringAttribute("ac");
 
     if (type.equals("ba")) {
       if (ac.equals("nodes")) {
-        for (Iterator<Node> i = scc.iterator(); i.hasNext();) {
-          Node n = i.next();
-
+        for (Node<PropT> n: scc) {
           if (n.getBooleanAttribute("accepting")) {
             return true;
           }
         }
       } else if (ac.equals("edges")) {
-        for (Iterator<Node> i = scc.iterator(); i.hasNext();) {
-          Node n = i.next();
-
-          for (Iterator<Edge> j = n.getOutgoingEdges().iterator(); j.hasNext();) {
-            Edge e = j.next();
-
+        for (Node<PropT> n: scc) {
+          for (Edge<PropT> e: n.getOutgoingEdges ()) {
             if (e.getBooleanAttribute("accepting")) {
               return true;
             }
@@ -229,9 +211,7 @@ public class SCCReduction {
       int nsets = g.getIntAttribute("nsets");
 
       if (ac.equals("nodes")) {
-        for (Iterator<Node> i = scc.iterator(); i.hasNext();) {
-          Node n = i.next();
-
+        for (Node<PropT> n: scc) {
           for (int j = 0; j < nsets; j++) {
             if (n.getBooleanAttribute("acc" + j)) {
               return true;
@@ -239,14 +219,10 @@ public class SCCReduction {
           }
         }
       } else if (ac.equals("edges")) {
-        for (Iterator<Node> i = scc.iterator(); i.hasNext();) {
-          Node n = i.next();
-
-          for (Iterator<Edge> j = n.getOutgoingEdges().iterator(); j.hasNext();) {
-            Edge e = j.next();
-
+        for (Node<PropT> n: scc) {
+          for (Edge<PropT> e: n.getOutgoingEdges ()) {
             for (int k = 0; k < nsets; k++) {
-              if (e.getBooleanAttribute("acc" + j)) {
+              if (e.getBooleanAttribute("acc" + k)) { // TODO: was Iterator j; verify…
                 return true;
               }
             }
@@ -262,24 +238,18 @@ public class SCCReduction {
     return false;
   }
 
-  private static void clearAccepting (List<Node> scc, Graph g) {
+  private static <PropT> void clearAccepting (List<Node<PropT>> scc, Graph<PropT> g) {
     String type = g.getStringAttribute("type");
     String ac = g.getStringAttribute("ac");
 
     if (type.equals("ba")) {
       if (ac.equals("nodes")) {
-        for (Iterator<Node> i = scc.iterator(); i.hasNext();) {
-          Node n = i.next();
-
+        for (Node<PropT> n: scc) {
           n.setBooleanAttribute("accepting", false);
         }
       } else if (ac.equals("edges")) {
-        for (Iterator<Node> i = scc.iterator(); i.hasNext();) {
-          Node n = i.next();
-
-          for (Iterator<Edge> j = n.getOutgoingEdges().iterator(); j.hasNext();) {
-            Edge e = j.next();
-
+        for (Node<PropT> n: scc) {
+          for (Edge<PropT> e: n.getOutgoingEdges ()) {
             e.setBooleanAttribute("accepting", false);
           }
         }
@@ -290,20 +260,14 @@ public class SCCReduction {
       int nsets = g.getIntAttribute("nsets");
 
       if (ac.equals("nodes")) {
-        for (Iterator<Node> i = scc.iterator(); i.hasNext();) {
-          Node n = i.next();
-
+        for (Node<PropT> n: scc) {
           for (int j = 0; j < nsets; j++) {
             n.setBooleanAttribute("acc" + j, false);
           }
         }
       } else if (ac.equals("edges")) {
-        for (Iterator<Node> i = scc.iterator(); i.hasNext();) {
-          Node n = i.next();
-
-          for (Iterator<Edge> j = n.getOutgoingEdges().iterator(); j.hasNext();) {
-            Edge e = j.next();
-
+        for (Node<PropT> n: scc) {
+          for (Edge<PropT> e: n.getOutgoingEdges ()) {
             for (int k = 0; k < nsets; k++) {
               e.setBooleanAttribute("acc" + k, false);
             }
@@ -317,19 +281,15 @@ public class SCCReduction {
     }
   }
 
-  private static void clearExternalEdges (List<Node> scc, Graph g) {
+  private static <PropT> void clearExternalEdges (List<Node<PropT>> scc, Graph<PropT> g) {
     String type = g.getStringAttribute("type");
     String ac = g.getStringAttribute("ac");
 
     if (type.equals("ba")) {
       if (ac.equals("nodes")) {
       } else if (ac.equals("edges")) {
-        for (Iterator<Node> i = scc.iterator(); i.hasNext();) {
-          Node n = i.next();
-
-          for (Iterator<Edge> j = n.getOutgoingEdges().iterator(); j.hasNext();) {
-            Edge e = j.next();
-
+        for (Node<PropT> n: scc) {
+          for (Edge<PropT> e: n.getOutgoingEdges ()) {
             if (!scc.contains(e.getNext())) {
               e.setBooleanAttribute("accepting", false);
             }
@@ -343,12 +303,8 @@ public class SCCReduction {
 
       if (ac.equals("nodes")) {
       } else if (ac.equals("edges")) {
-        for (Iterator<Node> i = scc.iterator(); i.hasNext();) {
-          Node n = i.next();
-
-          for (Iterator<Edge> j = n.getOutgoingEdges().iterator(); j.hasNext();) {
-            Edge e = j.next();
-
+        for (Node<PropT> n: scc) {
+          for (Edge<PropT> e: n.getOutgoingEdges ()) {
             if (!scc.contains(e.getNext())) {
               for (int k = 0; k < nsets; k++) {
                 e.setBooleanAttribute("acc" + k, false);

@@ -26,40 +26,40 @@ import java.util.StringTokenizer;
 /**
  * DOCUMENT ME!
  */
-public class Edge {
-  private Node       source;
-  private Node       next;
-  private String     guard;
+public class Edge<PropT> {
+  private Node<PropT>       source;
+  private Node<PropT>       next;
+  private AbstractGuard<PropT> guard;
   private String     action;
   private Attributes attributes;
 
-  public Edge (Node s, Node n, String g, String a, Attributes as) {
+  public Edge (Node<PropT> s, Node<PropT> n, AbstractGuard<PropT> g, String a, Attributes as) {
     init(s, n, g, a, as);
   }
 
-  public Edge (Node s, Node n, String g, String a) {
+  public Edge (Node<PropT> s, Node<PropT> n, AbstractGuard<PropT> g, String a) {
     init(s, n, g, a, null);
   }
 
-  public Edge (Node s, Node n, String g) {
+  public Edge (Node<PropT> s, Node<PropT> n, AbstractGuard<PropT> g) {
     init(s, n, g, "-", null);
   }
 
-  public Edge (Node s, Node n) {
-    init(s, n, "-", "-", null);
+  public Edge (Node<PropT> s, Node<PropT> n) {
+    init(s, n, null, "-", null); // TODO: 3rd param: don’t pass null
   }
 
-  public Edge (Node s, Edge e) {
+  public Edge (Node<PropT> s, Edge<PropT> e) {
     init(s, e.next, e.guard, e.action, 
          new Attributes(e.attributes));
   }
 
-  public Edge (Edge e, Node n) {
+  public Edge (Edge<PropT> e, Node<PropT> n) {
     init(e.source, n, e.guard, e.action, 
          new Attributes(e.attributes));
   }
 
-  public Edge (Edge e) {
+  public Edge (Edge<PropT> e) {
     init(e.source, e.next, e.guard, e.action, 
          new Attributes(e.attributes));
   }
@@ -84,7 +84,7 @@ public class Edge {
     return attributes.getBoolean(name);
   }
 
-  public String getGuard () {
+  public AbstractGuard<PropT> getGuard () {
     return guard;
   }
 
@@ -96,11 +96,11 @@ public class Edge {
     return attributes.getInt(name);
   }
 
-  public Node getNext () {
+  public Node<PropT> getNext () {
     return next;
   }
 
-  public Node getSource () {
+  public Node<PropT> getSource () {
     return source;
   }
 
@@ -145,7 +145,8 @@ public class Edge {
     }
   }
 
-  private void init (Node s, Node n, String g, String a, Attributes as) {
+  private void init (Node<PropT> s, Node<PropT> n,
+      AbstractGuard<PropT> g, String a, Attributes as) {
     source = s;
     next = n;
     guard = g;
@@ -166,10 +167,10 @@ public class Edge {
     String g;
     String accs = "";
 
-    if (guard.equals("-")) {
+    if (guard.isEmpty ()) {
       g = "TRUE";
     } else {
-      g = guard;
+      g = guard.toString (); // TODO: remove this stuff entirely
     }
 
     int nsets = source.getGraph().getIntAttribute("nsets");
@@ -219,7 +220,7 @@ public class Edge {
 
   // robbyjo's contribution
   private void save_spin (PrintStream out) {
-    String          g = guard.equals("-") ? "1" : guard;
+    String          g = guard.isEmpty () ? "1" : guard.toString ();
     String          accs = "";
 
     StringTokenizer tok = new StringTokenizer(g, "&");
@@ -286,7 +287,7 @@ public class Edge {
     out.println("<transition to=\"" + next.getId() + "\">");
 
     if (!guard.equals("-")) {
-      out.println("<guard>" + xml_quote(guard) + "</guard>");
+      out.println("<guard>" + xml_quote(guard.toString ()) + "</guard>");
     }
 
     if (!action.equals("-")) {

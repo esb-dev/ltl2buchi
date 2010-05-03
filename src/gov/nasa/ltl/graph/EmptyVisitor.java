@@ -21,7 +21,7 @@ package gov.nasa.ltl.graph;
 /**
  * DOCUMENT ME!
  */
-public class EmptyVisitor implements Visitor {
+public class EmptyVisitor<PropT> implements Visitor<PropT> {
   protected Object arg;
 
   public EmptyVisitor () {
@@ -31,9 +31,9 @@ public class EmptyVisitor implements Visitor {
     this.arg = arg;
   }
 
-  public void visitEdge (Edge e) {
+  public void visitEdge (Edge<PropT> e) {
   }
 
-  public void visitNode (Node n) {
+  public void visitNode (Node<PropT> n) {
   }
 }

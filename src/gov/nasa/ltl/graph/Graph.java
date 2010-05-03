@@ -18,11 +18,8 @@
 //
 package gov.nasa.ltl.graph;
 
-import java.io.BufferedReader;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -31,18 +28,18 @@ import java.util.List;
 /**
  * DOCUMENT ME!
  */
-public class Graph {
-	public static final int SM_FORMAT = 0;
+public class Graph<PropT> {
+	static final int SM_FORMAT = 0;
 
-	public static final int FSP_FORMAT = 1;
+	static final int FSP_FORMAT = 1;
 
-	public static final int XML_FORMAT = 2;
+	static final int XML_FORMAT = 2;
 
-	public static final int SPIN_FORMAT = 3;
+	static final int SPIN_FORMAT = 3;
 
-	private List<Node> nodes;
+	private List<Node<PropT>> nodes;
 
-	private Node init;
+	private Node<PropT> init;
 
 	private Attributes attributes;
 
@@ -68,22 +65,23 @@ public class Graph {
 
 	public int getEdgeCount() {
 		int count = 0;
-
-		for (Iterator<Node> i = new LinkedList<Node>(nodes).iterator(); i.hasNext();) {
-			count += i.next().getOutgoingEdgeCount();
+		LinkedList<Node<PropT>> l = new LinkedList<Node<PropT>>(nodes);
+		
+		for (Node<PropT> n: l) {
+			count += n.getOutgoingEdgeCount();
 		}
 
 		return count;
 	}
 
-	public synchronized void setInit(Node n) {
+	public synchronized void setInit(Node<PropT> n) {
 		if (nodes.contains(n)) {
 			init = n;
 			number();
 		}
 	}
 
-	public Node getInit() {
+	public Node<PropT> getInit() {
 		return init;
 	}
 
@@ -95,10 +93,8 @@ public class Graph {
 		return attributes.getInt(name);
 	}
 
-	public Node getNode(int id) {
-		for (Iterator<Node> i = nodes.iterator(); i.hasNext();) {
-			Node n = i.next();
-
+	public Node<PropT> getNode(int id) {
+		for (Node<PropT> n: nodes) {
 			if (n.getId() == id) {
 				return n;
 			}
@@ -111,8 +107,8 @@ public class Graph {
 		return nodes.size();
 	}
 
-	public List<Node> getNodes() {
-		return new LinkedList<Node>(nodes);
+	public List<Node<PropT>> getNodes() {
+		return new LinkedList<Node<PropT>>(nodes);
 	}
 
 	public synchronized void setStringAttribute(String name, String value) {
@@ -123,55 +119,44 @@ public class Graph {
 		return attributes.getString(name);
 	}
 
-	public static Graph load() throws IOException {
-		return load(new BufferedReader(new InputStreamReader(System.in)));
-	}
-
-	public static Graph load(String fname) throws IOException {
-		return load(new BufferedReader(new FileReader(fname)));
-	}
-
-	public synchronized void dfs(Visitor v) {
+	public synchronized void dfs(Visitor<PropT> v) {
 		if (init == null) {
 			return;
 		}
 
-		forAllNodes(new EmptyVisitor() {
-			public void visitNode(Node n) {
+		forAllNodes(new EmptyVisitor<PropT>() {
+			public void visitNode(Node<PropT> n) {
 				n.setBooleanAttribute("_reached", false);
 			}
 		});
 
 		dfs(init, v);
 
-		forAllNodes(new EmptyVisitor() {
-			public void visitNode(Node n) {
+		forAllNodes(new EmptyVisitor<PropT>() {
+			public void visitNode(Node<PropT> n) {
 				n.setBooleanAttribute("_reached", false);
 			}
 		});
 	}
 
-	public synchronized void forAll(Visitor v) {
-		for (Iterator<Node> i = new LinkedList<Node>(nodes).iterator(); i.hasNext();) {
-			Node n = i.next();
-
+	public synchronized void forAll(Visitor<PropT> v) {
+	    LinkedList<Node<PropT>> l = new LinkedList<Node<PropT>>(nodes);
+		for (Node<PropT> n: l) {
 			v.visitNode(n);
-
 			n.forAllEdges(v);
 		}
 	}
 
-	public synchronized void forAllEdges(Visitor v) {
-		for (Iterator<Node> i = new LinkedList<Node>(nodes).iterator(); i.hasNext();) {
-			Node n = i.next();
-
+	public synchronized void forAllEdges(Visitor<PropT> v) {
+	    LinkedList<Node<PropT>> l = new LinkedList<Node<PropT>>(nodes);
+		for (Node<PropT> n: l) {
 			n.forAllEdges(v);
 		}
 	}
 
-	public synchronized void forAllNodes(Visitor v) {
-		for (Iterator<Node> i = new LinkedList<Node>(nodes).iterator(); i.hasNext();) {
-			Node n = i.next();
+	public synchronized void forAllNodes(Visitor<PropT> v) {
+	    LinkedList<Node<PropT>> l = new LinkedList<Node<PropT>>(nodes);
+		for (Node<PropT> n: l) {
 			v.visitNode(n);
 		}
 	}
@@ -192,7 +177,7 @@ public class Graph {
 		save(new PrintStream(new FileOutputStream(fname)), SM_FORMAT);
 	}
 
-	synchronized void addNode(Node n) {
+	synchronized void addNode(Node<PropT> n) {
 		nodes.add(n);
 
 		if (init == null) {
@@ -202,7 +187,7 @@ public class Graph {
 		number();
 	}
 
-	synchronized void removeNode(Node n) {
+	synchronized void removeNode(Node<PropT> n) {
 		nodes.remove(n);
 
 		if (init == n) {
@@ -223,44 +208,11 @@ public class Graph {
 			attributes = a;
 		}
 
-		nodes = new LinkedList<Node>();
+		nodes = new LinkedList<Node<PropT>>();
 		init = null;
 	}
 
-	private static Graph load(BufferedReader in) throws IOException {
-		int ns = readInt(in);
-		Node[] nodes = new Node[ns];
-
-		Graph g = new Graph(readAttributes(in));
-
-		for (int i = 0; i < ns; i++) {
-			int nt = readInt(in);
-
-			if (nodes[i] == null) {
-				nodes[i] = new Node(g, readAttributes(in));
-			} else {
-				nodes[i].setAttributes(readAttributes(in));
-			}
-
-			for (int j = 0; j < nt; j++) {
-				int nxt = readInt(in);
-				String gu = readString(in);
-				String ac = readString(in);
-
-				if (nodes[nxt] == null) {
-					nodes[nxt] = new Node(g);
-				}
-
-				new Edge(nodes[i], nodes[nxt], gu, ac, readAttributes(in));
-			}
-		}
-
-		g.number();
-
-		return g;
-	}
-
-	private synchronized void number() {
+	public synchronized void number() {
 		int cnt;
 
 		if (init != null) {
@@ -270,48 +222,15 @@ public class Graph {
 			cnt = 0;
 		}
 
-		for (Iterator<Node> i = nodes.iterator(); i.hasNext();) {
-			Node n = i.next();
-
+		for (Node<PropT> n: nodes) {
 			if (n != init) {
 				n.setId(cnt++);
 			}
 		}
 	}
 
-	private static Attributes readAttributes(BufferedReader in)
-			throws IOException {
-		return new Attributes(readLine(in));
-	}
-
-	private static int readInt(BufferedReader in) throws IOException {
-		return Integer.parseInt(readLine(in));
-	}
-
-	private static String readLine(BufferedReader in) throws IOException {
-		String line;
-
-		do {
-			line = in.readLine();
-
-			int idx = line.indexOf('#');
-
-			if (idx != -1) {
-				line = line.substring(0, idx);
-			}
-
-			line = line.trim();
-		} while (line.length() == 0);
-
-		return line;
-	}
-
-	private static String readString(BufferedReader in) throws IOException {
-		return readLine(in);
-	}
-
-	private synchronized void dfs(Node n, Visitor v) {
-		final Visitor visitor = v;
+	private synchronized void dfs(Node<PropT> n, Visitor<PropT> v) {
+		final Visitor<PropT> visitor = v;
 
 		if (n.getBooleanAttribute("_reached")) {
 			return;
@@ -321,8 +240,8 @@ public class Graph {
 
 		v.visitNode(n);
 
-		n.forAllEdges(new EmptyVisitor() {
-			public void visitEdge(Edge e) {
+		n.forAllEdges(new EmptyVisitor<PropT>() {
+			public void visitEdge(Edge<PropT> e) {
 				dfs(e.getNext(), visitor);
 			}
 		});
@@ -367,11 +286,11 @@ public class Graph {
 			empty = true;
 		}
 
-		for (Iterator<Node> i = nodes.iterator(); i.hasNext();) {
+		for (Iterator<Node<PropT>> i = nodes.iterator(); i.hasNext();) {
 			//System.out.println(",");
 			out.println(",");
 
-			Node n = i.next();
+			Node<PropT> n = i.next();
 			n.save(out, FSP_FORMAT);
 		}
 
@@ -386,8 +305,8 @@ public class Graph {
 			//System.out.print("AS = { ");
 			out.print("AS = { ");
 
-			for (Iterator<Node> i = nodes.iterator(); i.hasNext();) {
-				Node n = i.next();
+			for (Iterator<Node<PropT>> i = nodes.iterator(); i.hasNext();) {
+				Node<PropT> n = i.next();
 
 				if (n.getBooleanAttribute("accepting")) {
 					if (!first) {
@@ -412,8 +331,8 @@ public class Graph {
 				//System.out.print("AS"+k+" = { ");
 				out.print("AS" + k + " = { ");
 
-				for (Iterator<Node> i = nodes.iterator(); i.hasNext();) {
-					Node n = i.next();
+				for (Iterator<Node<PropT>> i = nodes.iterator(); i.hasNext();) {
+					Node<PropT> n = i.next();
 
 					if (n.getBooleanAttribute("acc" + k)) {
 						if (!first) {
@@ -446,8 +365,8 @@ public class Graph {
 			init.save(out, SM_FORMAT);
 		}
 
-		for (Iterator<Node> i = nodes.iterator(); i.hasNext();) {
-			Node n = i.next();
+		for (Iterator<Node<PropT>> i = nodes.iterator(); i.hasNext();) {
+			Node<PropT> n = i.next();
 
 			if (n != init) {
 				n.save(out, SM_FORMAT);
@@ -465,8 +384,8 @@ public class Graph {
 		}
 
 		init.save(out, SPIN_FORMAT);
-		for (Iterator<Node> i = nodes.iterator(); i.hasNext();) {
-			Node n = i.next();
+		for (Iterator<Node<PropT>> i = nodes.iterator(); i.hasNext();) {
+			Node<PropT> n = i.next();
 
 			if (init == n) {
 				continue;
@@ -484,8 +403,8 @@ public class Graph {
 		out.println("<graph nodes=\"" + nodes.size() + "\">");
 		attributes.save(out, XML_FORMAT);
 
-		for (Iterator<Node> i = nodes.iterator(); i.hasNext();) {
-			Node n = i.next();
+		for (Iterator<Node<PropT>> i = nodes.iterator(); i.hasNext();) {
+			Node<PropT> n = i.next();
 
 			if (n != init) {
 				n.save(out, XML_FORMAT);

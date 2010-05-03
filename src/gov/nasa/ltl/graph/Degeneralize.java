@@ -18,6 +18,8 @@
 //
 package gov.nasa.ltl.graph;
 
+import gov.nasa.ltl.graphio.Reader;
+
 import java.io.IOException;
 
 
@@ -25,7 +27,7 @@ import java.io.IOException;
  * DOCUMENT ME!
  */
 public class Degeneralize {
-  public static Graph degeneralize (Graph g) {
+  public static <PropT> Graph<PropT> degeneralize (Graph<PropT> g) {
     int    nsets = g.getIntAttribute("nsets");
     String type = g.getStringAttribute("type");
 
@@ -38,14 +40,14 @@ public class Degeneralize {
         } else {
           Label.label(g);
 
-          Graph d = Generate.generate(nsets);
+          Graph<String> d = Generate.generate(nsets);
 
 
           //    d.save(Graph.FSP_FORMAT);
           g = SynchronousProduct.product(g, d);
         }
       } else if (ac.equals("edges")) {
-        Graph d = Generate.generate(nsets);
+        Graph<String> d = Generate.generate(nsets);
         g = SynchronousProduct.product(g, d);
       }
     } else if (!type.equals("ba")) {
@@ -55,27 +57,20 @@ public class Degeneralize {
     return g;
   }
 
-  public static void help () {
-    System.err.println("usage:");
-    System.err.println("\tDegenalize [outfile]");
-    System.exit(1);
-  }
-
   public static void main (String[] args) {
     if (args.length > 1) {
       System.out.println("usage:");
       System.out.println("\tjava gov.nasa.ltl.graph.Degeneralize [<filename>]");
-
-      return;
+      System.exit (1);
     }
 
-    Graph g = null;
+    Graph<String> g = null;
 
     try {
       if (args.length == 0) {
-        g = Graph.load();
+        g = Reader.read();
       } else {
-        g = Graph.load(args[0]);
+        g = Reader.read(args[0]);
       }
     } catch (IOException e) {
       System.out.println("Can't load the graph.");
@@ -88,11 +83,11 @@ public class Degeneralize {
     g.save();
   }
 
-  private static void accept (Graph g) {
+  private static <PropT> void accept (Graph<PropT> g) {
     g.setBooleanAttribute("nsets", false);
 
-    g.forAllNodes(new EmptyVisitor() {
-      public void visitNode (Node n) {
+    g.forAllNodes(new EmptyVisitor<PropT>() {
+      public void visitNode (Node<PropT> n) {
         if (n.getBooleanAttribute("acc0")) {
           n.setBooleanAttribute("accepting", true);
           n.setBooleanAttribute("acc0", false);

@@ -35,20 +35,13 @@ import java.util.*;
  */
 public class Formula<PropT> implements Comparable<Formula<PropT>> {
   private static int       nId = 0;
-  /* TODO: Using Object instead of Formula<PropT> for ht and
-   * matches means a loss of compile-time type safety, but it’s not
-   * possible to use the type parameter for these static variables.
-   * Should find a better way to do these things.
-   * 
-   * These declarations are intended like this:
-   * private static Hashtable<String, Formula<?>> ht = ...;
+  /* This declaration is intended like this:
    * private static Hashtable<String, Formula<?>> matches = ...;
    * where ? is PropT.
    */
-  private static Hashtable<String, Object> ht =
-    new Hashtable<String, Object>();
-  private static Hashtable<String, Object> matches =
-    new Hashtable<String, Object>();
+  private static Hashtable<String, Formula<?>> matches =
+    new Hashtable<String, Formula<?>>();
+  private static HashSet<Formula<?>> cache = new HashSet<Formula<?>>();
   private char             content;
   private boolean          literal;
   private Formula<PropT>   left;
@@ -99,7 +92,8 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
 
   public static void reset_static () {
     clearMatches();
-    clearHT();
+//    clearHT();
+    clearCache ();
   }
 
   public char getContent () {
@@ -581,25 +575,62 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
     return unique(new Formula<PropT>('W', false, sx, dx, null));
   }
 
-  private static void clearHT () {
+  /*private static void clearHT () {
     ht = new Hashtable<String, Object>();
+  }*/
+  
+  private static void clearCache() {
+    cache = new HashSet<Formula<?>>();
   }
 
   private static void clearMatches () {
-    matches = new Hashtable<String, Object>();
+    matches = new Hashtable<String, Formula<?>>();
   }
 
   @SuppressWarnings ("unchecked")
   private static <PropT> Formula<PropT> unique (Formula<PropT> f) {
-    String s = f.toString();
-
-    if (ht.containsKey(s)) {
-      return (Formula<PropT>) ht.get(s);
+//    String s = f.toString();
+//
+//    if (ht.containsKey(s)) {
+//      return (Formula<PropT>) ht.get(s);
+//    }
+//
+//    ht.put(s, (Formula<Object>) f);
+//
+//    return f;
+    for (Formula<?> g: cache) {
+      if (f.equals (g))
+        return (Formula<PropT>)g;
     }
-
-    ht.put(s, (Formula<Object>) f);
-
+    cache.add ((Formula<Object>)f);
     return f;
+  }
+  
+  @Override
+  public boolean equals (Object obj) {
+    if (obj == null || !(obj instanceof Formula<?>))
+      return false;
+    Formula<?> f = (Formula<?>)obj;
+    switch (content) {
+    case 'p':
+      return name.equals (f.name);
+    case 'A':
+    case 'O':
+    case 'U':
+    case 'V':
+    case 'W':
+      return f.content == content &&
+        left.equals (f.left) && right.equals (f.right);
+    case 'N':
+    case 'X':
+      return f.content == content && left.equals (f.left);
+    case 't':
+    case 'f':
+      return f.content == content;
+    default:
+      assert false : "unknown operator";
+    }
+    return false;
   }
 
   @SuppressWarnings ("unchecked")
@@ -628,7 +659,8 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
       return false;
     }
 
-    Hashtable<String, Object> saved = new Hashtable<String, Object>(matches);
+    Hashtable<String, Formula<?>> saved = 
+      new Hashtable<String, Formula<?>>(matches);
 
     switch (content) {
     case 'A':

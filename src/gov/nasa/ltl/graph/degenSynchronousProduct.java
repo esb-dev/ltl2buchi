@@ -18,32 +18,29 @@
 //
 package gov.nasa.ltl.graph;
 
-import java.io.IOException;
+import gov.nasa.ltl.graphio.Reader;
 
-import java.util.Iterator;
-import java.util.List;
+import java.io.IOException;
 
 
 /**
  * DOCUMENT ME!
  */
 public class degenSynchronousProduct {
-  public static void dfs (Graph g, Node[][] nodes, int nsets, Node n0, Node n1) {
-    Node n = get(g, nodes, n0, n1);
+  public static <PropT1, PropT2> void dfs (Graph<PropT1> g,
+      Node<PropT1>[][] nodes, int nsets, Node<PropT1> n0, Node<PropT2> n1) {
+    Node<PropT1> n = get(g, nodes, n0, n1);
 
-    List<Edge> t0 = n0.getOutgoingEdges();
-    List<Edge> t1 = n1.getOutgoingEdges();
-
-    for (Iterator<Edge> i0 = t0.iterator(); i0.hasNext();) {
-      Edge    e0 = i0.next();
-      Node    next0 = e0.getNext();
-      Edge    theEdge = null;
+    for (Edge<PropT1> e0: n0.getOutgoingEdges ()) {
+      Node<PropT1>    next0 = e0.getNext();
+      Edge<PropT2>    theEdge = null;
 
       boolean found = false;
 
-      for (Iterator<Edge> i1 = t1.iterator(); i1.hasNext() && !found;) {
-        Edge e1 = i1.next();
-
+      for (Edge<PropT2> e1: n1.getOutgoingEdges ()) {
+        if (found)
+          break;
+        
         if (e1.getBooleanAttribute("else")) {
           if (theEdge == null) {
             theEdge = e1;
@@ -62,7 +59,7 @@ public class degenSynchronousProduct {
               boolean b0 = e0.getBooleanAttribute("acc" + i);
               boolean b1 = e1.getBooleanAttribute("acc" + i);
 
-              if (b0 != b1) {
+              if (b1 && !b0) { // corrected by Dimitra
                 found = false;
 
                 break;
@@ -77,11 +74,11 @@ public class degenSynchronousProduct {
       }
 
       if (theEdge != null) {
-        Node    next1 = theEdge.getNext();
+        Node<PropT2> next1 = theEdge.getNext();
         boolean newNext = isNew(nodes, next0, next1);
-        Node    next = get(g, nodes, next0, next1);
+        Node<PropT1> next = get(g, nodes, next0, next1);
         // for side-effect in constructor:
-        new Edge(n, next, e0.getGuard(), theEdge.getAction(), null);
+        new Edge<PropT1>(n, next, e0.getGuard(), theEdge.getAction(), null);
 
         if (newNext) {
           dfs(g, nodes, nsets, next0, next1);
@@ -91,12 +88,12 @@ public class degenSynchronousProduct {
   }
 
   public static void main (String[] args) {
-    Graph g0;
-    Graph g1;
+    Graph<String> g0;
+    Graph<String> g1;
 
     try {
-      g0 = Graph.load(args[0]);
-      g1 = Graph.load(args[1]);
+      g0 = Reader.read(args[0]);
+      g1 = Reader.read(args[1]);
     } catch (IOException e) {
       System.err.println("Can't load automata");
       System.exit(1);
@@ -104,12 +101,14 @@ public class degenSynchronousProduct {
       return;
     }
 
-    Graph g = product(g0, g1);
+    Graph<String> g = product(g0, g1);
 
     g.save();
   }
 
-  public static Graph product (Graph g0, Graph g1) {
+  @SuppressWarnings ("unchecked")
+  public static <PropT1, PropT2> Graph<PropT1> product (Graph<PropT1> g0,
+                                                        Graph<PropT2> g1) {
     int nsets = g0.getIntAttribute("nsets");
 
     if (nsets != g1.getIntAttribute("nsets")) {
@@ -117,25 +116,27 @@ public class degenSynchronousProduct {
       System.exit(1);
     }
 
-    Node[][] nodes;
-    Graph    g = new Graph();
+    Node<PropT1>[][] nodes;
+    Graph<PropT1>    g = new Graph<PropT1>();
     g.setStringAttribute("type", "ba");
     g.setStringAttribute("ac", "nodes");
 
-    nodes = new Node[g0.getNodeCount()][g1.getNodeCount()];
+    nodes = (Node<PropT1>[][])new Node[g0.getNodeCount()][g1.getNodeCount()];
 
     dfs(g, nodes, nsets, g0.getInit(), g1.getInit());
 
     return g;
   }
 
-  private static boolean isNew (Node[][] nodes, Node n0, Node n1) {
+  private static <PropT1, PropT2> boolean isNew (Node<PropT1>[][] nodes,
+      Node<PropT1> n0, Node<PropT2> n1) {
     return nodes[n0.getId()][n1.getId()] == null;
   }
 
-  private static Node get (Graph g, Node[][] nodes, Node n0, Node n1) {
+  private static <PropT1, PropT2> Node<PropT1> get (Graph<PropT1> g,
+      Node<PropT1>[][] nodes, Node<PropT1> n0, Node<PropT2> n1) {
     if (nodes[n0.getId()][n1.getId()] == null) {
-      Node   n = new Node(g);
+      Node<PropT1> n = new Node<PropT1>(g);
       String label0 = n0.getStringAttribute("label");
       String label1 = n1.getStringAttribute("label");
 

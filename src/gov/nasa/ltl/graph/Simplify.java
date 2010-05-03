@@ -18,6 +18,8 @@
 //
 package gov.nasa.ltl.graph;
 
+import gov.nasa.ltl.graphio.Reader;
+
 import java.io.IOException;
 
 import java.util.Iterator;
@@ -35,13 +37,13 @@ public class Simplify {
       return;
     }
 
-    Graph g = null;
+    Graph<String> g = null;
 
     try {
       if (args.length == 0) {
-        g = Graph.load();
+        g = Reader.read();
       } else {
-        g = Graph.load(args[0]);
+        g = Reader.read(args[0]);
       }
     } catch (IOException e) {
       System.out.println("Can't load the graph.");
@@ -54,17 +56,15 @@ public class Simplify {
     g.save();
   }
 
-  public static Graph simplify (Graph g) {
+  public static <PropT> Graph<PropT> simplify (Graph<PropT> g) {
     boolean simplified;
 
     do {
       simplified = false;
 
-      for (Iterator<Node> i = g.getNodes().iterator(); i.hasNext();) {
-        Node n0 = i.next();
-
-        for (Iterator<Node> j = g.getNodes().iterator(); j.hasNext();) {
-          Node n1 = j.next();
+      for (Node<PropT> n0: g.getNodes ()) {
+        for (Iterator<Node<PropT>> j = g.getNodes().iterator(); j.hasNext();) {
+          Node<PropT> n1 = j.next();
 
           if (n1.getId() <= n0.getId()) {
             continue;
@@ -77,44 +77,36 @@ public class Simplify {
 
           boolean equivalent = true;
 
-          for (Iterator<Edge> k = n0.getOutgoingEdges().iterator();
-               equivalent && k.hasNext();) {
-            Edge e0 = k.next();
-
+          for (Edge<PropT> e0: n0.getOutgoingEdges ()) {
+            if (!equivalent)
+              break;
             equivalent = false;
-
-            for (Iterator<Edge> l = n1.getOutgoingEdges().iterator();
-                 !equivalent && l.hasNext();) {
-              Edge e1 = l.next();
-
+            for (Edge<PropT> e1: n1.getOutgoingEdges ()) {
               if ((e0.getNext() == e1.getNext()) || 
                       ((e0.getNext() == n0 || e0.getNext() == n1) && 
                         (e1.getNext() == n0 || e1.getNext() == n1))) {
                 if (e0.getGuard().equals(e1.getGuard())) {
                   if (e0.getAction().equals(e1.getAction())) {
                     equivalent = true;
+                    break;
                   }
                 }
               }
             }
           }
 
-          for (Iterator<Edge> k = n1.getOutgoingEdges().iterator();
-               equivalent && k.hasNext();) {
-            Edge e1 = k.next();
-
+          for (Edge<PropT> e1: n1.getOutgoingEdges ()) {
+            if (!equivalent)
+              break;
             equivalent = false;
-
-            for (Iterator<Edge> l = n0.getOutgoingEdges().iterator();
-                 !equivalent && l.hasNext();) {
-              Edge e0 = l.next();
-
+            for (Edge<PropT> e0: n0.getOutgoingEdges ()) {
               if ((e0.getNext() == e1.getNext()) || 
                       ((e0.getNext() == n0 || e0.getNext() == n1) && 
                         (e1.getNext() == n0 || e1.getNext() == n1))) {
                 if (e0.getGuard().equals(e1.getGuard())) {
                   if (e0.getAction().equals(e1.getAction())) {
                     equivalent = true;
+                    break;
                   }
                 }
               }
@@ -122,13 +114,9 @@ public class Simplify {
           }
 
           if (equivalent) {
-            for (Iterator<Edge> k = n1.getIncomingEdges().iterator();
-                 equivalent && k.hasNext();) {
-              Edge e = k.next();
-
-              new Edge(e.getSource(), n0, e.getGuard(), e.getAction(), 
+            for (Edge<PropT> e: n1.getIncomingEdges ())
+              new Edge<PropT>(e.getSource(), n0, e.getGuard(), e.getAction(), 
                        e.getAttributes());
-            }
 
             n1.remove();
 

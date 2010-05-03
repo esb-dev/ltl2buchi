@@ -18,9 +18,10 @@
 //
 package gov.nasa.ltl.graph;
 
+import gov.nasa.ltl.graphio.Reader;
+
 import java.io.IOException;
 
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -47,20 +48,15 @@ public class SCC {
     }
 
     try {
-      Graph g = Graph.load("out.sm");
+      Graph<String> g = Reader.read("out.sm");
 
-      List<List<Node>>  scc = scc(g);
+      List<List<Node<String>>>  scc = scc(g);
 
-      for (Iterator<List<Node>> i = scc.iterator(); i.hasNext();) {
-        List<Node> l = i.next();
+      for (List<Node<String>> l: scc) {
         System.out.println("component:");
-
-        for (Iterator<Node> j = l.iterator(); j.hasNext();) {
-          Node n = j.next();
-
+        for (Node<String> n: l) {
           System.out.println("  " + n.getStringAttribute("label"));
         }
-
         System.out.println();
       }
 
@@ -76,45 +72,42 @@ public class SCC {
     }
   }
 
-  public static void print (List<List<Node>> sccs) {
+  public static <PropT> void print (List<List<Node<PropT>>> sccs) {
     System.out.println("Strongly connected components:");
 
     int cnt = 0;
 
-    for (Iterator<List<Node>> i = sccs.iterator(); i.hasNext();) {
-      List<Node> scc = i.next();
-
+    for (List<Node<PropT>> scc: sccs) {
       System.out.println("\tSCC #" + (cnt++));
 
-      for (Iterator<Node> j = scc.iterator(); j.hasNext();) {
-        Node n = j.next();
+      for (Node<PropT> n: scc) {
         System.out.println("\t\t" + n.getId() + " - " + 
                            n.getStringAttribute("label"));
       }
     }
   }
 
-  @SuppressWarnings("unchecked")
-  public static List<List<Node>> scc (Graph g) {
-    Node init = g.getInit();
+  @SuppressWarnings ("unchecked")
+  public static <PropT> List<List<Node<PropT>>> scc (Graph<PropT> g) {
+    Node<PropT> init = g.getInit();
 
     if (init == null) {
-      return new LinkedList<List<Node>>();
+      return new LinkedList<List<Node<PropT>>>();
     }
 
     init.setBooleanAttribute("_reached", true);
 
-    SCCState s = new SCCState();
+    SCCState<PropT> s = new SCCState<PropT>();
     visit(init, s);
 
-    final List<Node>[] scc = new List[s.SCC];
+    final List<Node<PropT>>[] scc = (List<Node<PropT>>[])new List[s.SCC];
 
     for (int i = 0; i < s.SCC; i++) {
-      scc[i] = new LinkedList<Node>();
+      scc[i] = new LinkedList<Node<PropT>>();
     }
 
-    g.forAllNodes(new EmptyVisitor() {
-      public void visitNode (Node n) {
+    g.forAllNodes(new EmptyVisitor<PropT>() {
+      public void visitNode (Node<PropT> n) {
         scc[n.getIntAttribute("_scc")].add(n);
 
         n.setBooleanAttribute("_reached", false);
@@ -124,7 +117,7 @@ public class SCC {
       }
     });
 
-    List<List<Node>> list = new LinkedList<List<Node>>();
+    List<List<Node<PropT>>> list = new LinkedList<List<Node<PropT>>>();
 
     for (int i = 0; i < s.SCC; i++) {
       list.add(scc[i]);
@@ -133,15 +126,14 @@ public class SCC {
     return list;
   }
 
-  private static void visit (Node p, SCCState s) {
+  private static <PropT> void visit (Node<PropT> p, SCCState<PropT> s) {
     s.L.add(0, p);
     p.setIntAttribute("_dfsnum", s.N);
     p.setIntAttribute("_low", s.N);
     s.N++;
 
-    for (Iterator<Edge> i = p.getOutgoingEdges().iterator(); i.hasNext();) {
-      Edge e = i.next();
-      Node q = e.getNext();
+    for (Edge<PropT> e: p.getOutgoingEdges()) {
+      Node<PropT> q = e.getNext();
 
       if (!q.getBooleanAttribute("_reached")) {
         q.setBooleanAttribute("_reached", true);
@@ -159,7 +151,7 @@ public class SCC {
     }
 
     if (p.getIntAttribute("_low") == p.getIntAttribute("_dfsnum")) {
-      Node v;
+      Node<PropT> v;
 
       do {
         v = s.L.remove(0);
@@ -173,9 +165,9 @@ public class SCC {
   /**
    * DOCUMENT ME!
    */
-  private static class SCCState {
+  private static class SCCState<PropT> {
     public int  N = 0;
     public int  SCC = 0;
-    public List<Node> L = new LinkedList<Node>();
+    public List<Node<PropT>> L = new LinkedList<Node<PropT>>();
   }
 }

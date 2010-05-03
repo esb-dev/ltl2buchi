@@ -26,14 +26,16 @@ import java.util.*;
 /**
  * DOCUMENT ME!
  */
-class Transition<PropT> {
+public class Transition<PropT> {
   private TreeSet<Formula<PropT>> propositions;
   private int       pointsTo;
   private BitSet    accepting;
   private boolean   safe_accepting;
+  private Guard<PropT> guard;
 
   public Transition (TreeSet<Formula<PropT>> prop, int nd_id, BitSet acc, boolean safety) {
     propositions = prop;
+    guard = new Guard<PropT> (prop);
     pointsTo = nd_id;
     accepting = new BitSet(Node.getAcceptingConds());
     accepting.or(acc);
@@ -101,51 +103,10 @@ class Transition<PropT> {
     System.out.print("} -> S" + pointsTo + " ");
   }
 
-  public void SMoutput (gov.nasa.ltl.graph.Node[] nodes, 
-                        gov.nasa.ltl.graph.Node node) {
-    String guard = "-";
+  public void SMoutput (gov.nasa.ltl.graph.Node<PropT>[] nodes, 
+                        gov.nasa.ltl.graph.Node<PropT> node) {
     String action = "-";
-
-    if (!propositions.isEmpty()) {
-      Iterator<Formula<PropT>> it = propositions.iterator();
-      Formula<PropT> nextForm = null;
-      StringBuilder sb = new StringBuilder();
-      char          cont; // stores content of formula
-      boolean       need_AND = false; // connect with AND multiple propositions
-
-      while (it.hasNext()) {
-        nextForm = it.next();
-        cont = nextForm.getContent();
-
-        if (need_AND) {
-          sb.append('&');
-        }
-
-        need_AND = true;
-
-        switch (cont) {
-        case 'N':
-          sb.append('!');
-          sb.append(nextForm.getSub1().getName());
-
-          break;
-
-        case 't':
-          sb.append("true");
-
-          break;
-
-        default:
-          sb.append(nextForm.getName());
-
-          break;
-        }
-      }
-
-      guard = sb.toString();
-    }
-
-    Edge e = new Edge(node, nodes[pointsTo], guard, action);
+    Edge<PropT> e = new Edge<PropT>(node, nodes[pointsTo], guard, action);
 
     if (Node.accepting_conds == 0) {
       //  Dimitra - Jan 10 2003
@@ -211,5 +172,23 @@ class Transition<PropT> {
 
   public int goesTo () {
     return pointsTo;
+  }
+
+  /**
+   * @return the safe_accepting
+   */
+  public boolean isSafeAccepting () {
+    return safe_accepting;
+  }
+
+  /**
+   * @return the guard
+   */
+  public Guard<PropT> getGuard () {
+    return guard;
+  }
+  
+  public boolean isAccepting (int i) {
+    return accepting.get (i);
   }
 }

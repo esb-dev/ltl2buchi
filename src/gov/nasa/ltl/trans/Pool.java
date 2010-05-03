@@ -22,7 +22,7 @@ package gov.nasa.ltl.trans;
 /**
  * DOCUMENT ME!
  */
-class Pool {
+public class Pool {
   private static int     last_assigned = 0;
   private static boolean stopped = false;
 

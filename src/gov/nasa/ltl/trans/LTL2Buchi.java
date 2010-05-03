@@ -21,6 +21,7 @@ package gov.nasa.ltl.trans;
 //Some modifications by: Roby Joehanes
 
 import gov.nasa.ltl.graph.*;
+import gov.nasa.ltl.graphio.Writer;
 
 import java.io.*;
 
@@ -36,7 +37,7 @@ public class LTL2Buchi {
 		boolean bisim = true;
 		boolean fairSim = true;
 		boolean file_provided = false;
-		int format = Graph.FSP_FORMAT;
+		Writer.Format format = Writer.Format.FSP;
 		debug = true;
 
 		System.out.println("\nAuthors Dimitra Giannakopoulou & Flavio Lerda, \n(c) 2001,2003 NASA Ames Research Center\n");
@@ -78,11 +79,11 @@ public class LTL2Buchi {
 
 					if (i < args.length) {
 						if (args[i].equals("fsp"))
-							format = Graph.FSP_FORMAT;
+							format = Writer.Format.FSP;
 						else if (args[i].equals("promela"))
-							format = Graph.SPIN_FORMAT;
+							format = Writer.Format.SPIN;
 						else if (args[i].equals("xml"))
-							format = Graph.XML_FORMAT;
+							format = Writer.Format.XML;
 					}
 
 				} else if (args[i].equals("-f")) {
@@ -118,8 +119,9 @@ public class LTL2Buchi {
 		}
 
 		try {
-			Graph g = translate(ltl, rewrite, bisim, fairSim);
-			g.save(format);
+			Graph<String> g = translate(ltl, rewrite, bisim, fairSim);
+			Writer<String> w = Writer.getWriter (format, System.out);
+			w.write (g);
 			System.out.println("\n***********************\n");
 		} catch (ParseErrorException ex) {
 			System.out.println("Error: " + ex);
@@ -132,7 +134,7 @@ public class LTL2Buchi {
 		Pool.reset_static();
 	}
 
-	public static Graph translate(String formula, boolean rewrite,
+	public static Graph<String> translate(String formula, boolean rewrite,
 			boolean bisim, boolean fair_sim) throws ParseErrorException {
 		//	System.out.println("Translating formula: " + formula);
 		// System.out.println();
@@ -154,12 +156,12 @@ public class LTL2Buchi {
 		return translate(Parser.parse (formula), rewrite, bisim, fair_sim);
 	}
 
-	public static <PropT> Graph translate(Formula<PropT> formula, boolean rewrite,
-	    boolean bisim, boolean fair_sim) {
+	public static <PropT> Graph<PropT> translate(Formula<PropT> formula,
+	    boolean rewrite, boolean bisim, boolean fair_sim) {
 	    boolean superset = true;
         boolean scc = true;
 
-		Graph gba = Translator.translate(formula);
+		Graph<PropT> gba = Translator.translate(formula);
 
 		if (debug) {
 			//      gba.save("gba.sm");
@@ -204,7 +206,7 @@ public class LTL2Buchi {
 			}
 		}
 
-		Graph ba = Degeneralize.degeneralize(gba);
+		Graph<PropT> ba = Degeneralize.degeneralize(gba);
 
 		//    ba.save("ba.sm");
 		if (debug) {
@@ -269,16 +271,16 @@ public class LTL2Buchi {
 		return ba;
 	}
 
-	public static Graph translate(String formula) throws ParseErrorException {
+	public static Graph<String> translate(String formula) throws ParseErrorException {
 		// To work with Bandera and JPF
 		return translate(formula, true, true, true);
 	}
 	
-	public static <PropT> Graph translate(Formula<PropT> formula) {
+	public static <PropT> Graph<PropT> translate(Formula<PropT> formula) {
 	    return translate(formula, true, true, true);
 	}
 
-	public static Graph translate(File file) throws ParseErrorException {
+	public static Graph<String> translate(File file) throws ParseErrorException {
 		String formula = "";
 
 		try {

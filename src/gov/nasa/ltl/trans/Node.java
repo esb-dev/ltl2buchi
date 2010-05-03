@@ -25,7 +25,7 @@ import java.util.*;
 /**
  * DOCUMENT ME!
  */
-class Node<PropT> implements Comparable<Node<PropT>> { // removed (non-conforming) -pcd
+public class Node<PropT> implements Comparable<Node<PropT>> { // removed (non-conforming) -pcd
   public static int      accepting_conds = 0;
   private static boolean init_collapsed = false;
   private int            nodeId;

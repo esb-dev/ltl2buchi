@@ -21,8 +21,9 @@ package gov.nasa.ltl.graph;
 /**
  * DOCUMENT ME!
  */
-public class ITypeNeighbor extends Pair<String> implements Comparable<ITypeNeighbor> {
-  public ITypeNeighbor (int colorIn, String transitionIn) {
+public class ITypeNeighbor<PropT> extends Pair<AbstractGuard<PropT>>
+  implements Comparable<ITypeNeighbor<PropT>> {
+  public ITypeNeighbor (int colorIn, AbstractGuard<PropT> transitionIn) {
     super(colorIn, transitionIn);
   }
 
@@ -34,16 +35,16 @@ public class ITypeNeighbor extends Pair<String> implements Comparable<ITypeNeigh
     return super.getValue();
   }
 
-  public void setTransition (String transitionIn) {
+  public void setTransition (AbstractGuard<PropT> transitionIn) {
     super.setElement(transitionIn);
   }
 
-  public String getTransition () {
+  public AbstractGuard<PropT> getTransition () {
     return super.getElement();
   }
 
   // Priority of comparison is made on the string 
-  public int compareTo (ITypeNeighbor other) {
+  public int compareTo (ITypeNeighbor<PropT> other) {
     int           comparison = getTransition().compareTo(other.getTransition());
 
     if (comparison == 0) {

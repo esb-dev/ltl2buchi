@@ -25,9 +25,9 @@ import java.util.TreeSet;
 /**
  * DOCUMENT ME!
  */
-public class ColorPair extends Pair<TreeSet<ITypeNeighbor>>
-implements Comparable<ColorPair> {
-  public ColorPair (int colorIn, TreeSet<ITypeNeighbor> iMaxSetIn) {
+public class ColorPair<PropT> extends Pair<TreeSet<ITypeNeighbor<PropT>>>
+implements Comparable<ColorPair<PropT>> {
+  public ColorPair (int colorIn, TreeSet<ITypeNeighbor<PropT>> iMaxSetIn) {
     super(colorIn, iMaxSetIn);
   }
 
@@ -39,16 +39,16 @@ implements Comparable<ColorPair> {
     return super.getValue();
   }
 
-  public void setIMaxSet (TreeSet<ITypeNeighbor> iMaxSetIn) {
+  public void setIMaxSet (TreeSet<ITypeNeighbor<PropT>> iMaxSetIn) {
     super.setElement(iMaxSetIn);
   }
 
-  public TreeSet<ITypeNeighbor> getIMaxSet () {
+  public TreeSet<ITypeNeighbor<PropT>> getIMaxSet () {
     return super.getElement();
   }
 
-  public int compareTo (ColorPair other) {
-    TreeSet<ITypeNeighbor>   otherSet = other.getIMaxSet();
+  public int compareTo (ColorPair<PropT> other) {
+    TreeSet<ITypeNeighbor<PropT>>   otherSet = other.getIMaxSet();
 
     if (getIMaxSet().size() < otherSet.size()) {
       return -1;
@@ -59,18 +59,15 @@ implements Comparable<ColorPair> {
     }
 
     // TreeSets are ordered !!
-    int index = 0;
-
-    for (Iterator<ITypeNeighbor> i = getIMaxSet().iterator(); i.hasNext();) {
-      ITypeNeighbor     currNeigh = i.next();
-      ITypeNeighbor[]  otherArray = otherSet.toArray(new ITypeNeighbor[otherSet.size()]);
-      int           comparison = currNeigh.compareTo(otherArray[index]);
+    Iterator<ITypeNeighbor<PropT>> otherIter = otherSet.iterator ();
+    for (ITypeNeighbor<PropT> currNeigh: getIMaxSet()) {
+      if (!otherIter.hasNext ())
+        break;
+      int comparison = currNeigh.compareTo(otherIter.next ());
 
       if ((comparison < 0) || (comparison > 0)) {
         return comparison;
       }
-
-      index++;
     }
 
     if (getColor() < other.getColor()) {
@@ -84,38 +81,12 @@ implements Comparable<ColorPair> {
     return 0;
   }
 
+  @SuppressWarnings ("unchecked")
   public boolean equals (Object o) {
-    ColorPair other = (ColorPair) o;
-    TreeSet<ITypeNeighbor>   otherSet = other.getIMaxSet();
-
-    if (getIMaxSet().size() < otherSet.size()) {
+    if (o == null || !(o instanceof ColorPair<?>))
       return false;
-    }
-
-    if (getIMaxSet().size() > otherSet.size()) {
-      return false;
-    }
-
-    if (getColor() != other.getColor()) {
-      return false;
-    }
-
-    // TreeSets are ordered
-    int index = 0;
-
-    for (Iterator<ITypeNeighbor> i = getIMaxSet().iterator(); i.hasNext();) {
-      ITypeNeighbor currNeigh = i.next();
-      ITypeNeighbor[]  otherArray = otherSet.toArray(new ITypeNeighbor[otherSet.size()]);
-      int           comparison = currNeigh.compareTo(otherArray[index]);
-
-      if ((comparison < 0) || (comparison > 0)) {
-        return false;
-      }
-
-      index++;
-    }
-
-    return true;
+    ColorPair<PropT> other = (ColorPair<PropT>) o;
+    return compareTo(other) == 0;
   }
   
   public int hashCode() {

@@ -18,6 +18,8 @@
 //
 package gov.nasa.ltl.graph;
 
+import gov.nasa.ltl.graphio.Reader;
+
 import java.io.IOException;
 
 
@@ -25,7 +27,7 @@ import java.io.IOException;
  * DOCUMENT ME!
  */
 public class Label {
-  public static Graph label (Graph g) {
+  public static <PropT> Graph<PropT> label (Graph<PropT> g) {
     String type = g.getStringAttribute("type");
     String ac = g.getStringAttribute("ac");
 
@@ -33,11 +35,11 @@ public class Label {
       if (ac.equals("nodes")) {
         final int nsets = g.getIntAttribute("nsets");
 
-        g.forAllNodes(new EmptyVisitor() {
-          public void visitNode (Node n) {
-            n.forAllEdges(new EmptyVisitor() {
-              public void visitEdge (Edge e) {
-                Node n1 = e.getSource();
+        g.forAllNodes(new EmptyVisitor<PropT>() {
+          public void visitNode (Node<PropT> n) {
+            n.forAllEdges(new EmptyVisitor<PropT>() {
+              public void visitEdge (Edge<PropT> e) {
+                Node<PropT> n1 = e.getSource();
 
                 for (int i = 0; i < nsets; i++) {
                   if (n1.getBooleanAttribute("acc" + i)) {
@@ -64,7 +66,7 @@ public class Label {
 
   public static void main (String[] args) {
     try {
-      Graph g = Graph.load(args[0]);
+      Graph<String> g = Reader.read(args[0]);
       label(g);
       g.save();
     } catch (IOException e) {

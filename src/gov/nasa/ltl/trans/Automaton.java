@@ -91,8 +91,9 @@ class Automaton<PropT> {
     System.out.println(").\n");
   }
 
-  public static <PropT> Graph SMoutput (State<PropT>[] automaton) {
-    Graph g = new Graph();
+  @SuppressWarnings ("unchecked")
+  public static <PropT> Graph<PropT> SMoutput (State<PropT>[] automaton) {
+    Graph<PropT> g = new Graph<PropT>();
     g.setStringAttribute("type", "gba");
     g.setStringAttribute("ac", "edges");
 
@@ -100,13 +101,13 @@ class Automaton<PropT> {
       return g;
     }
 
-    int                            size = Pool.assign();
-    gov.nasa.ltl.graph.Node[] nodes = new gov.nasa.ltl.graph.Node[size];
+    int size = Pool.assign();
+    gov.nasa.ltl.graph.Node<PropT>[] nodes = new gov.nasa.ltl.graph.Node[size];
 
     for (int i = 0; i < size; i++) {
       if ((automaton[i] != null) && 
               (i == automaton[i].get_representativeId())) {
-        nodes[i] = new gov.nasa.ltl.graph.Node(g);
+        nodes[i] = new gov.nasa.ltl.graph.Node<PropT>(g);
         nodes[i].setStringAttribute("label", 
                                     "S" + 
                                     automaton[i].get_representativeId());

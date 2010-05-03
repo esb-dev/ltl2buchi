@@ -18,6 +18,8 @@
 //
 package gov.nasa.ltl.graph;
 
+import gov.nasa.ltl.graphio.Reader;
+
 import java.io.IOException;
 
 
@@ -27,23 +29,23 @@ import java.io.IOException;
 public class SM2DG {
   public static void main (String[] args) {
     try {
-      Graph g = null;
+      Graph<String> g = null;
 
       switch (args.length) {
       case 0:
-        g = Graph.load("out.sm");
+        g = Reader.read("out.sm");
         g.save(Graph.FSP_FORMAT);
 
         break;
 
       case 1:
-        g = Graph.load(args[0]);
+        g = Reader.read(args[0]);
         g.save(Graph.FSP_FORMAT);
 
         break;
 
       case 2:
-        g = Graph.load(args[0]);
+        g = Reader.read(args[0]);
         g.save(args[1], Graph.FSP_FORMAT);
 
         break;

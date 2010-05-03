@@ -18,12 +18,13 @@
 //
 package gov.nasa.ltl.graph;
 
+import gov.nasa.ltl.graphio.Reader;
+
 import java.io.*;
 
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.StringTokenizer;
 import java.util.TreeSet;
 import java.util.Vector;
 
@@ -40,13 +41,13 @@ public class SFSReduction {
       return;
     }
 
-    Graph g = null;
+    Graph<String> g = null;
 
     try {
       if (args.length == 0) {
-        g = Graph.load();
+        g = Reader.read();
       } else {
-        g = Graph.load(args[0]);
+        g = Reader.read(args[0]);
       }
     } catch (IOException e) {
       System.out.println("Can't load the graph.");
@@ -54,28 +55,28 @@ public class SFSReduction {
       return;
     }
 
-    Graph reduced = reduce(g);
+    Graph<String> reduced = reduce(g);
 
     reduced.save();
   }
 
-  public static Graph reduce (Graph g) {
+  @SuppressWarnings ("unchecked")
+  public static <PropT> Graph<PropT> reduce (Graph<PropT> g) {
     // debugged by Dimitra 3/4/02 - added |PO| information so that main while
     // loop works correctly - removed break statement based on color only
     int        currNumColors;
     int        prevNumColors = 1;
     int        currNumPO = 3;
     int        prevNumPO = 1;
-    TreeSet<ColorPair> newColorSet = null;
-    LinkedList<Pair<ColorPair>> newColorList = null;
+    TreeSet<ColorPair<PropT>> newColorSet = null;
+    LinkedList<Pair<ColorPair<PropT>>> newColorList = null;
     boolean    accepting = false;
     boolean    nonaccepting = false;
 
     // Initialization
-    List<Node> nodes = g.getNodes();
+    List<Node<PropT>> nodes = g.getNodes();
 
-    for (Iterator<Node> i = nodes.iterator(); i.hasNext();) {
-      Node currNode = i.next();
+    for (Node<PropT> currNode: nodes) {
       currNode.setIntAttribute("_prevColor", 1);
 
       if (isAccepting(currNode)) {
@@ -109,8 +110,7 @@ public class SFSReduction {
 
     while ((currNumColors != prevNumColors) || (currNumPO != prevNumPO)) {
       // Incrementing i, equiv. current values become previous ones
-      for (Iterator<Node> i = nodes.iterator(); i.hasNext();) {
-        Node currNode = i.next();
+      for (Node<PropT> currNode: nodes) {
         currNode.setIntAttribute("_prevColor", 
                                  currNode.getIntAttribute("_currColor"));
       }
@@ -120,13 +120,11 @@ public class SFSReduction {
 
 
       // Getting the new color pairs
-      newColorList = new LinkedList<Pair<ColorPair>>(); // keeps association of node with new color
-      newColorSet = new TreeSet<ColorPair>(); // keeps set of new colors
+      newColorList = new LinkedList<Pair<ColorPair<PropT>>>(); // keeps association of node with new color
+      newColorSet = new TreeSet<ColorPair<PropT>>(); // keeps set of new colors
 
-      for (Iterator<Node> i = nodes.iterator(); i.hasNext();) {
-        Node      currNode = i.next();
-
-        ColorPair currPair = new ColorPair(currNode.getIntAttribute(
+      for (Node<PropT> currNode: nodes) {
+        ColorPair<PropT> currPair = new ColorPair<PropT>(currNode.getIntAttribute(
                                                  "_prevColor"), 
                                            getPrevN(currNode, prevPO));
 
@@ -134,7 +132,7 @@ public class SFSReduction {
         /*    System.out.println("Transition set from node: " + currNode.getId()
            + " is: " + currPair.getIMaxSet());
          */
-        newColorList.add(new Pair<ColorPair>(currNode.getId(), currPair));
+        newColorList.add(new Pair<ColorPair<PropT>>(currNode.getId(), currPair));
         newColorSet.add(currPair);
       }
 
@@ -145,17 +143,15 @@ public class SFSReduction {
       // Convert the set into a linked list so that rank of object is known
       // originally used set to avoid duplicates 
       // rank will just be the position of the object in the list
-      LinkedList<ColorPair> ordered = new LinkedList<ColorPair>();
+      LinkedList<ColorPair<PropT>> ordered = new LinkedList<ColorPair<PropT>>();
 
-      for (Iterator<ColorPair> i = newColorSet.iterator(); i.hasNext();) {
-        ColorPair currPair = i.next();
+      for (ColorPair<PropT> currPair: newColorSet) {
         ordered.add(currPair);
       }
 
       // Renaming color set
-      for (Iterator<Pair<ColorPair>> i = newColorList.iterator(); i.hasNext();) {
-        Pair<ColorPair> cPair = i.next();
-        ColorPair currPair = cPair.getElement();
+      for (Pair<ColorPair<PropT>> cPair: newColorList) {
+        ColorPair<PropT> currPair = cPair.getElement();
         g.getNode(cPair.getValue())
          .setIntAttribute("_currColor", ordered.indexOf(currPair) + 1);
       }
@@ -166,11 +162,10 @@ public class SFSReduction {
       currNumPO = 0;
       currPO = new boolean[currNumColors][currNumColors];
 
-      for (Iterator<Pair<ColorPair>> i = newColorList.iterator(); i.hasNext();) {
-        ColorPair currPairOne = i.next().getElement();
-
-        for (Iterator<Pair<ColorPair>> j = newColorList.iterator(); j.hasNext();) {
-          ColorPair currPairTwo = j.next().getElement();
+      for (Pair<ColorPair<PropT>> currPairOneP: newColorList) {
+        ColorPair<PropT> currPairOne = currPairOneP.getElement ();
+        for (Pair<ColorPair<PropT>> currPairTwoP: newColorList) {
+          ColorPair<PropT> currPairTwo = currPairTwoP.getElement ();
           boolean   po = prevPO[currPairTwo.getColor() - 1][currPairOne.getColor() - 1];
           boolean   dominate = iDominateSet(currPairOne.getIMaxSet(), 
                                             currPairTwo.getIMaxSet(), prevPO);
@@ -186,24 +181,23 @@ public class SFSReduction {
     }
 
     // Create new graph
-    Graph result;
+    Graph<PropT> result;
 
     if (newColorList == null) {
       result = g;
     } else {
-      result = new Graph();
+      result = new Graph<PropT>();
 
-      Node[] newNodes = new Node[currNumColors];
+      Node<PropT>[] newNodes = (Node<PropT>[])new Node[currNumColors];
 
       for (int i = 0; i < currNumColors; i++) {
-        Node n = new Node(result);
+        Node<PropT> n = new Node<PropT>(result);
         newNodes[i] = n;
       }
 
-      for (Iterator<Pair<ColorPair>> i = newColorList.iterator(); i.hasNext();) {
-        Pair<ColorPair> nodePair = i.next();
-        int       origNodeId = nodePair.getValue();
-        ColorPair colPair = nodePair.getElement();
+      for (Pair<ColorPair<PropT>> nodePair: newColorList) {
+        int           origNodeId = nodePair.getValue();
+        ColorPair<PropT> colPair = nodePair.getElement();
 
         if (newColorSet != null && newColorSet.contains(colPair)) {
           // for all transitions based on colors, newColorSet makes sure that
@@ -213,15 +207,14 @@ public class SFSReduction {
           // create the new transition relation 
           newColorSet.remove(colPair);
 
-          TreeSet<ITypeNeighbor> pairSet = colPair.getIMaxSet();
-          int     color = colPair.getColor();
-          Node    currNode = newNodes[color - 1];
+          TreeSet<ITypeNeighbor<PropT>> pairSet = colPair.getIMaxSet();
+          int color = colPair.getColor();
+          Node<PropT> currNode = newNodes[color - 1];
 
-          for (Iterator<ITypeNeighbor> j = pairSet.iterator(); j.hasNext();) {
-            ITypeNeighbor neigh = j.next();
+          for (ITypeNeighbor<PropT> neigh: pairSet) {
             int           neighPos = neigh.getColor() - 1;
             // for side effect in constructor:
-            new Edge(currNode, newNodes[neighPos], neigh.getTransition());
+            new Edge<PropT>(currNode, newNodes[neighPos], neigh.getTransition());
           }
 
           // starting node
@@ -243,21 +236,21 @@ public class SFSReduction {
     //return result;
   }
 
-  private static boolean isAccepting (Node nodeIn) {
+  private static <PropT> boolean isAccepting (Node<PropT> nodeIn) {
     return (nodeIn.getBooleanAttribute("accepting"));
   }
 
-  private static TreeSet<ITypeNeighbor> getPrevN (Node currNode, boolean[][] prevPO) {
-    List<Edge>     edges = currNode.getOutgoingEdges();
-    LinkedList<ITypeNeighbor>    neighbors = new LinkedList<ITypeNeighbor>();
-    ITypeNeighbor iNeigh;
-    TreeSet<ITypeNeighbor>       prevN = new TreeSet<ITypeNeighbor>();
+  private static <PropT> TreeSet<ITypeNeighbor<PropT>> getPrevN (
+      Node<PropT> currNode, boolean[][] prevPO) {
+    List<Edge<PropT>>     edges = currNode.getOutgoingEdges();
+    LinkedList<ITypeNeighbor<PropT>> neighbors = new LinkedList<ITypeNeighbor<PropT>>();
+    ITypeNeighbor<PropT> iNeigh;
+    TreeSet<ITypeNeighbor<PropT>> prevN = new TreeSet<ITypeNeighbor<PropT>>();
 
-    for (Iterator<Edge> i = edges.iterator(); i.hasNext();) {
-      Edge currEdge = i.next();
-      iNeigh = new ITypeNeighbor(currEdge.getNext()
+    for (Edge<PropT> currEdge: edges) {
+      iNeigh = new ITypeNeighbor<PropT>(currEdge.getNext()
                                          .getIntAttribute("_prevColor"), 
-                                 currEdge.getGuard());
+                                        currEdge.getGuard());
       neighbors.add(iNeigh);
     }
 
@@ -277,9 +270,9 @@ public class SFSReduction {
       useless = false;
       iNeigh = neighbors.removeFirst();
 
-      for (Iterator<ITypeNeighbor> i = neighbors.iterator(); i.hasNext();) {
-        ITypeNeighbor nNeigh = i.next();
-        ITypeNeighbor dominating = iDominates(iNeigh, nNeigh, prevPO);
+      for (Iterator<ITypeNeighbor<PropT>> i = neighbors.iterator(); i.hasNext();) {
+        ITypeNeighbor<PropT> nNeigh = i.next();
+        ITypeNeighbor<PropT> dominating = iDominates(iNeigh, nNeigh, prevPO);
 
         if (dominating == iNeigh) {
           i.remove();
@@ -300,17 +293,18 @@ public class SFSReduction {
     return prevN;
   }
 
-  private static boolean iDominateSet (TreeSet<ITypeNeighbor> setOne,
-                                       TreeSet<ITypeNeighbor> setTwo, 
-                                       boolean[][] prevPO) {
-    TreeSet<ITypeNeighbor> working = new TreeSet<ITypeNeighbor>(setTwo);
+  private static <PropT> boolean iDominateSet (
+      TreeSet<ITypeNeighbor<PropT>> setOne,
+      TreeSet<ITypeNeighbor<PropT>> setTwo, 
+      boolean[][] prevPO) {
+    TreeSet<ITypeNeighbor<PropT>> working = new TreeSet<ITypeNeighbor<PropT>>(setTwo);
 
-    for (Iterator<ITypeNeighbor> i = working.iterator(); i.hasNext();) {
-      ITypeNeighbor neighTwo = i.next();
+    for (Iterator<ITypeNeighbor<PropT>> i = working.iterator(); i.hasNext();) {
+      ITypeNeighbor<PropT> neighTwo = i.next();
 
-      for (Iterator<ITypeNeighbor> j = setOne.iterator(); j.hasNext();) {
-        ITypeNeighbor neighOne = j.next();
-        ITypeNeighbor dominating = iDominates(neighOne, neighTwo, prevPO);
+      for (Iterator<ITypeNeighbor<PropT>> j = setOne.iterator(); j.hasNext();) {
+        ITypeNeighbor<PropT> neighOne = j.next();
+        ITypeNeighbor<PropT> dominating = iDominates(neighOne, neighTwo, prevPO);
 
         if (dominating == neighOne) {
           i.remove();
@@ -326,15 +320,36 @@ public class SFSReduction {
 
     return false;
   }
-
+  
   /** Returns the neighbor that dominates. If none dominates the
    * other, then returns null
    */
-  private static ITypeNeighbor iDominates (ITypeNeighbor iNeigh, 
-                                           ITypeNeighbor nNeigh, 
-                                           boolean[][] prevPO) {
-    String iTerm = iNeigh.getTransition();
-    String nTerm = nNeigh.getTransition();
+  private static <PropT> ITypeNeighbor<PropT> iDominates (
+      ITypeNeighbor<PropT> iNeigh, 
+      ITypeNeighbor<PropT> nNeigh, 
+      boolean[][] prevPO) {
+    AbstractGuard<PropT> iTerm = iNeigh.getTransition();
+    AbstractGuard<PropT> nTerm = nNeigh.getTransition();
+    int    iColor = iNeigh.getColor();
+    int    nColor = nNeigh.getColor();
+    
+    if ((iTerm.subtermOf (nTerm) || containsTrue (iTerm))
+        && prevPO[nColor-1][iColor-1])
+      return iNeigh;
+    if ((nTerm.subtermOf (iTerm) || containsTrue (nTerm))
+        && prevPO[iColor-1][nColor-1])
+      return nNeigh;
+    return null;
+  }
+  /** Returns the neighbor that dominates. If none dominates the
+   * other, then returns null
+   */
+/*  private static <PropT> ITypeNeighbor iDominates (
+      ITypeNeighbor<PropT> iNeigh, 
+      ITypeNeighbor<PropT> nNeigh, 
+      boolean[][] prevPO) {
+    AbstractGuard<PropT> iTerm = iNeigh.getTransition();
+    AbstractGuard<PropT> nTerm = nNeigh.getTransition();
     int    iColor = iNeigh.getColor();
     int    nColor = nNeigh.getColor();
     String theSubterm = subterm(iTerm, nTerm);
@@ -368,23 +383,20 @@ public class SFSReduction {
     }
 
     return null;
-  }
+  }*/
 
-  private static Graph reachabilityGraph (Graph g) {
-    Vector<Node> work = new Vector<Node>();
-    Vector<Node> reachable = new Vector<Node>();
+  private static <PropT> Graph<PropT> reachabilityGraph (Graph<PropT> g) {
+    Vector<Node<PropT>> work = new Vector<Node<PropT>>();
+    Vector<Node<PropT>> reachable = new Vector<Node<PropT>>();
     work.add(g.getInit());
 
     while (!work.isEmpty()) {
-      Node currNode = work.firstElement();
+      Node<PropT> currNode = work.firstElement();
       reachable.add(currNode);
 
       if (currNode != null) {
-        List<Edge> outgoingEdges = currNode.getOutgoingEdges();
-
-        for (Iterator<Edge> i = outgoingEdges.iterator(); i.hasNext();) {
-          Edge currEdge = i.next();
-          Node nextNode = currEdge.getNext();
+        for (Edge<PropT> currEdge: currNode.getOutgoingEdges ()) {
+          Node<PropT> nextNode = currEdge.getNext();
 
           if (!(work.contains(nextNode) || reachable.contains(nextNode))) {
             work.add(nextNode);
@@ -394,15 +406,12 @@ public class SFSReduction {
 
       if (work.remove(0) != currNode) {
         System.out.println("ERROR"); // should probably throw exception
+                                     // TODO: …make it so?
       }
     }
 
-    List<Node> nodes = g.getNodes();
-
-    if (nodes != null) {
-      for (Iterator<Node> i = nodes.iterator(); i.hasNext();) {
-        Node n = i.next();
-
+    if (g.getNodes() != null) {
+      for (Node<PropT> n: g.getNodes ()) {
         if (!reachable.contains(n)) {
           g.removeNode(n);
         }
@@ -412,7 +421,15 @@ public class SFSReduction {
     return g;
   }
 
-  private static String subterm (String pred1, String pred2) {
+  private static <PropT> boolean containsTrue (AbstractGuard<PropT> g) {
+    for (int i = 0; i < g.size (); i++)
+      if (g.getTrue (i))
+        return true;
+    return false;
+  }
+  
+  // TODO: verify what subterm() was supposed to do
+  /*private static String subterm (String pred1, String pred2) {
     if (pred1.equals("-") && pred2.equals("-")) {
       return "true";
     }
@@ -475,5 +492,5 @@ public class SFSReduction {
     }
 
     return alphaStr;
-  }
+  }*/
 }

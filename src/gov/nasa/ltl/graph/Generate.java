@@ -22,20 +22,23 @@ package gov.nasa.ltl.graph;
  * DOCUMENT ME!
  */
 public class Generate {
-  public static Graph generate (int nsets) {
+  private static class EmptyGuard extends ListGuard<String> {}
+  
+  @SuppressWarnings ("unchecked")
+  public static Graph<String> generate (int nsets) {
     // nsets is number of accepting conditions
     // nnodes is number of nodes in automaton generated - numbered from 0
     int    nnodes = nsets + 1;
 
-    Node[] nodes = new Node[nnodes];
-    Graph  g = new Graph();
+    Node<String>[] nodes = (Node<String>[])new Node[nnodes];
+    Graph<String>  g = new Graph<String>();
 
     g.setIntAttribute("nsets", nsets);
     g.setStringAttribute("type", "ba");
     g.setStringAttribute("ac", "nodes");
 
     for (int i = 0; i < nnodes; i++) {
-      nodes[i] = new Node(g);
+      nodes[i] = new Node<String>(g);
 
       StringBuilder label = new StringBuilder();
 
@@ -46,7 +49,7 @@ public class Generate {
       nodes[i].setStringAttribute("label", label.toString());
     }
 
-    Node n;
+    Node<String> n;
 
     // careful- generating edges acc/ding to which is to be explored first
     // corrected by Dimitra
@@ -54,14 +57,14 @@ public class Generate {
       n = nodes[i];
 
       for (int j = nsets; j > i; j--) {
-        Edge e = new Edge(nodes[i], nodes[j], "-", "-", null);
+        Edge<String> e = new Edge<String>(nodes[i], nodes[j], new EmptyGuard (), "-", null);
 
         for (int k = i; k < j; k++) {
           e.setBooleanAttribute("acc" + k, true);
         }
       }
 
-      Edge e = new Edge(nodes[i], nodes[i], "-", "-", null);
+      Edge<String> e = new Edge<String>(nodes[i], nodes[i], new EmptyGuard (), "-", null);
       e.setBooleanAttribute("else", true);
     }
 
@@ -70,14 +73,14 @@ public class Generate {
     n = nodes[nnodes - 1];
     n.setBooleanAttribute("accepting", true);
 
-    Edge e = new Edge(n, n, "-", "-", null);
+    Edge<String> e = new Edge<String>(n, n, new EmptyGuard (), "-", null);
 
     for (int k = 0; k < nsets; k++) {
       e.setBooleanAttribute("acc" + k, true);
     }
 
     for (int i = nsets - 1; i >= 0; i--) {
-      e = new Edge(n, nodes[i], "-", "-", null);
+      e = new Edge<String>(n, nodes[i], new EmptyGuard (), "-", null);
 
       if (i == 0) {
         e.setBooleanAttribute("else", true);
@@ -95,7 +98,7 @@ public class Generate {
   }
 
   public static void main (String[] args) {
-    Graph g = generate(5);
+    Graph<String> g = generate(5);
 
     g.save(Graph.FSP_FORMAT);
   }
