@@ -5,7 +5,8 @@ package gov.nasa.ltl.graphio;
 
 import java.io.PrintStream;
 
-import gov.nasa.ltl.graph.AbstractGuard;
+import gov.nasa.ltl.graph.Guard;
+import gov.nasa.ltl.graph.Literal;
 import gov.nasa.ltl.graph.Edge;
 import gov.nasa.ltl.graph.Graph;
 import gov.nasa.ltl.graph.Node;
@@ -56,7 +57,12 @@ public abstract class Writer<PropT> {
    * Print an edge label in some data format.
    * @param g label
    */
-  public abstract void write (AbstractGuard<PropT> g);
+  public abstract void write (Guard<PropT> g);
+  /**
+   * Print a literal in some data format.
+   * @param l literal
+   */
+  public abstract void write (Literal<PropT> l);
   
   /**
    * Obtain an instance of an Writer subclass for a given

@@ -138,7 +138,7 @@ public class SFSReduction {
 
       currNumColors = newColorSet.size();
 
-      //	  System.out.println("The number of colors is: " + currNumColors + "\n");
+//      	  System.out.println("The number of colors is: " + currNumColors + "\n");
       // Dimitra comments
       // Convert the set into a linked list so that rank of object is known
       // originally used set to avoid duplicates 
@@ -299,26 +299,17 @@ public class SFSReduction {
       boolean[][] prevPO) {
     TreeSet<ITypeNeighbor<PropT>> working = new TreeSet<ITypeNeighbor<PropT>>(setTwo);
 
-    for (Iterator<ITypeNeighbor<PropT>> i = working.iterator(); i.hasNext();) {
-      ITypeNeighbor<PropT> neighTwo = i.next();
-
-      for (Iterator<ITypeNeighbor<PropT>> j = setOne.iterator(); j.hasNext();) {
-        ITypeNeighbor<PropT> neighOne = j.next();
+    for (ITypeNeighbor<PropT> neighTwo: setTwo) {
+      for (ITypeNeighbor<PropT> neighOne: setOne) {
         ITypeNeighbor<PropT> dominating = iDominates(neighOne, neighTwo, prevPO);
 
         if (dominating == neighOne) {
-          i.remove();
-
+          working.remove (neighTwo);
           break;
         }
       }
     }
-
-    if (working.size() == 0) {
-      return true;
-    }
-
-    return false;
+    return working.isEmpty ();
   }
   
   /** Returns the neighbor that dominates. If none dominates the
@@ -328,62 +319,19 @@ public class SFSReduction {
       ITypeNeighbor<PropT> iNeigh, 
       ITypeNeighbor<PropT> nNeigh, 
       boolean[][] prevPO) {
-    AbstractGuard<PropT> iTerm = iNeigh.getTransition();
-    AbstractGuard<PropT> nTerm = nNeigh.getTransition();
+    Guard<PropT> iTerm = iNeigh.getTransition();
+    Guard<PropT> nTerm = nNeigh.getTransition();
     int    iColor = iNeigh.getColor();
     int    nColor = nNeigh.getColor();
     
-    if ((iTerm.subtermOf (nTerm) || containsTrue (iTerm))
+    if ((iTerm.subtermOf (nTerm) || iTerm.isTrue ())
         && prevPO[nColor-1][iColor-1])
       return iNeigh;
-    if ((nTerm.subtermOf (iTerm) || containsTrue (nTerm))
+    if ((nTerm.subtermOf (iTerm) || nTerm.isTrue ())
         && prevPO[iColor-1][nColor-1])
       return nNeigh;
     return null;
   }
-  /** Returns the neighbor that dominates. If none dominates the
-   * other, then returns null
-   */
-/*  private static <PropT> ITypeNeighbor iDominates (
-      ITypeNeighbor<PropT> iNeigh, 
-      ITypeNeighbor<PropT> nNeigh, 
-      boolean[][] prevPO) {
-    AbstractGuard<PropT> iTerm = iNeigh.getTransition();
-    AbstractGuard<PropT> nTerm = nNeigh.getTransition();
-    int    iColor = iNeigh.getColor();
-    int    nColor = nNeigh.getColor();
-    String theSubterm = subterm(iTerm, nTerm);
-
-    if (theSubterm == iTerm) {
-      if (prevPO[nColor - 1][iColor - 1]) {
-        // iNeigh i-dominates nNeigh
-        return iNeigh;
-      } else {
-        return null;
-      }
-    }
-
-    if (theSubterm == nTerm) {
-      if (prevPO[iColor - 1][nColor - 1]) {
-        // nNeigh i-dominates iNeigh
-        return nNeigh;
-      } else {
-        return null;
-      }
-    }
-
-    if (theSubterm.equals("true")) {
-      if (prevPO[nColor - 1][iColor - 1]) {
-        // iNeigh i-dominates nNeigh
-        return iNeigh;
-      } else if (prevPO[iColor - 1][nColor - 1]) {
-        // nNeigh i-dominates iNeigh
-        return nNeigh;
-      }
-    }
-
-    return null;
-  }*/
 
   private static <PropT> Graph<PropT> reachabilityGraph (Graph<PropT> g) {
     Vector<Node<PropT>> work = new Vector<Node<PropT>>();
@@ -420,77 +368,4 @@ public class SFSReduction {
 
     return g;
   }
-
-  private static <PropT> boolean containsTrue (AbstractGuard<PropT> g) {
-    for (int i = 0; i < g.size (); i++)
-      if (g.getTrue (i))
-        return true;
-    return false;
-  }
-  
-  // TODO: verify what subterm() was supposed to do
-  /*private static String subterm (String pred1, String pred2) {
-    if (pred1.equals("-") && pred2.equals("-")) {
-      return "true";
-    }
-
-    if (pred1.equals("-")) {
-      return pred1;
-    }
-
-    if (pred2.equals("-")) {
-      return pred2;
-    }
-
-    if ((pred1.indexOf("true") != -1) && (pred2.indexOf("true") != -1)) {
-      return "true";
-    }
-
-    if (pred1.indexOf("true") != -1) {
-      return pred1;
-    }
-
-    if (pred2.indexOf("true") != -1) {
-      return pred2;
-    }
-
-    // ASSUMPTION: the shortest predicate, i.e. with less litterals,
-    // will most probably be the subterm of the other predicate
-    // (provided terms are simplified)
-    // alpha subterm of tau, i.e. tau implies alpha
-    String alphaStr;
-    String tauStr;
-
-    if (pred1.length() <= pred2.length()) {
-      alphaStr = pred1;
-      tauStr = pred2;
-    } else {
-      alphaStr = pred2;
-      tauStr = pred1;
-    }
-
-    StringTokenizer alphaTk = new StringTokenizer(alphaStr, "&");
-    StringTokenizer tauTk = new StringTokenizer(tauStr, "&");
-    LinkedList<String>      tauLst = new LinkedList<String>();
-
-    // Putting the litterals of tau in a list - for easier access
-    while (tauTk.hasMoreTokens()) {
-      String token = tauTk.nextToken();
-      tauLst.add(token);
-    }
-
-    while (alphaTk.hasMoreTokens()) {
-      String alphaLit = alphaTk.nextToken();
-
-      if (!tauLst.contains(alphaLit)) {
-        return "false";
-      }
-    }
-
-    if (pred1.length() == pred2.length()) {
-      return "true";
-    }
-
-    return alphaStr;
-  }*/
 }

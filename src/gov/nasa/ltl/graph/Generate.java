@@ -22,8 +22,6 @@ package gov.nasa.ltl.graph;
  * DOCUMENT ME!
  */
 public class Generate {
-  private static class EmptyGuard extends ListGuard<String> {}
-  
   @SuppressWarnings ("unchecked")
   public static Graph<String> generate (int nsets) {
     // nsets is number of accepting conditions
@@ -57,14 +55,14 @@ public class Generate {
       n = nodes[i];
 
       for (int j = nsets; j > i; j--) {
-        Edge<String> e = new Edge<String>(nodes[i], nodes[j], new EmptyGuard (), "-", null);
+        Edge<String> e = new Edge<String>(nodes[i], nodes[j], new Guard<String> (), "-", null);
 
         for (int k = i; k < j; k++) {
           e.setBooleanAttribute("acc" + k, true);
         }
       }
 
-      Edge<String> e = new Edge<String>(nodes[i], nodes[i], new EmptyGuard (), "-", null);
+      Edge<String> e = new Edge<String>(nodes[i], nodes[i], new Guard<String> (), "-", null);
       e.setBooleanAttribute("else", true);
     }
 
@@ -73,14 +71,14 @@ public class Generate {
     n = nodes[nnodes - 1];
     n.setBooleanAttribute("accepting", true);
 
-    Edge<String> e = new Edge<String>(n, n, new EmptyGuard (), "-", null);
+    Edge<String> e = new Edge<String>(n, n, new Guard<String> (), "-", null);
 
     for (int k = 0; k < nsets; k++) {
       e.setBooleanAttribute("acc" + k, true);
     }
 
     for (int i = nsets - 1; i >= 0; i--) {
-      e = new Edge<String>(n, nodes[i], new EmptyGuard (), "-", null);
+      e = new Edge<String>(n, nodes[i], new Guard<String> (), "-", null);
 
       if (i == 0) {
         e.setBooleanAttribute("else", true);

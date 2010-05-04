@@ -4,43 +4,29 @@
 package gov.nasa.ltl.trans;
 
 
-import gov.nasa.ltl.graph.ListGuard;
+import gov.nasa.ltl.graph.Literal;
 
 import java.util.Collection;
-import java.util.List;
 
 /**
- * Abstraction for a general transition guard.
- * We assume a transition guard is a conjunction
- * of literals and leave the type of atoms variable.
- * So we treat a guard formula as list of tuples
- * &lt;atom,neg,t&gt;. Non-negated atoms have a
- * non-null atom entry, neg false, t false, negated
- * atoms have non-null atom, neg true, t false and
- * 'TRUE' literals have null atom, neg false, t true.
- * These entries can be obtained via the {@link #get(int)},
- * {@link #getNeg(int)} and {@link #getTrue(int)}
- * methods with the usual {@link List} semantics.
+ * 
  * @author estar
  */
-public class Guard<PropT> extends ListGuard<PropT> {
-  public Guard(Collection<Formula<PropT>> formulae) {
-    for (Formula<PropT> f: formulae) {
+public class Guard<PropT> extends gov.nasa.ltl.graph.Guard<PropT> {
+  private static final long serialVersionUID = -1099850840173426153L;
+
+  public Guard(Collection<Formula<PropT>> literals) {
+    for (Formula<PropT> f: literals) {
       switch(f.getContent ()) {
       case 'p':
-        atoms.add (f.getName ());
-        neg.add (false);
-        trueLit.add (false);
+        add (new Literal<PropT> (f.getName (), false, false));
         break;
       case 'N':
-        atoms.add (f.getSub1 ().getName ());
-        neg.add (true);
-        trueLit.add (false);
+        assert f.getSub1 ().getContent () == 'p';
+        add (new Literal<PropT> (f.getSub1 ().getName (), true, false));
         break;
       case 't':
-        atoms.add (null);
-        neg.add (false);
-        trueLit.add (true);
+        add (new Literal<PropT> (null, false, true));
         break;
       default:
         /* TODO: This should not happen, but currently
@@ -49,7 +35,7 @@ public class Guard<PropT> extends ListGuard<PropT> {
          * here, but this would require a lot of changes in
          * other places.
          */
-        throw new RuntimeException ("Bad literal: " + f);
+        assert false : "Bad literal: " + f;
       }
     }
   }

@@ -12,7 +12,7 @@ import java.util.StringTokenizer;
 import gov.nasa.ltl.graph.Attributes;
 import gov.nasa.ltl.graph.Edge;
 import gov.nasa.ltl.graph.Graph;
-import gov.nasa.ltl.graph.ListGuard;
+import gov.nasa.ltl.graph.Literal;
 import gov.nasa.ltl.graph.Node;
 
 /**
@@ -20,25 +20,21 @@ import gov.nasa.ltl.graph.Node;
  * 
  */
 public class Reader {
-  private static class Guard extends ListGuard<String> {
-    void add (String atom, boolean negated, boolean truth) {
-      atoms.add (atom);
-      neg.add (negated);
-      trueLit.add (truth);
-    }
+  private static class Guard extends gov.nasa.ltl.graph.Guard<String> {
+    private static final long serialVersionUID = -4427343445274801521L;
     
     // TODO: this is just a guess
-    void addFormula (String formula) {
-      StringTokenizer tok = new StringTokenizer(formula, "&");
-      while (tok.hasMoreTokens()) {
-        String token = tok.nextToken().trim ();
+    public Guard (String formula) {
+      StringTokenizer tok = new StringTokenizer (formula, "&");
+      while (tok.hasMoreTokens ()) {
+        String token = tok.nextToken ().trim ();
         if (token.equals ("TRUE"))
-          add (null, false, true);
+          add (new Literal<String> (null, false, true));
         else
           if (token.substring (0, 1).equals ("!"))
-            add (token.substring (1), true, false);
+            add (new Literal<String> (token.substring (1), true, false));
           else
-            add (token, false, false);
+            add (new Literal<String> (token, false, false));
       }
     }
   }
@@ -62,8 +58,7 @@ public class Reader {
         for (int j = 0; j < nt; j++) {
             int nxt = readInt(in);
             String gu = readString(in);
-            Guard guard = new Guard();
-            guard.addFormula (gu);
+            Guard guard = new Guard (gu);
             String ac = readString(in);
 
             if (nodes[nxt] == null) {

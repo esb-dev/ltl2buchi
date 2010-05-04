@@ -29,19 +29,19 @@ import java.util.StringTokenizer;
 public class Edge<PropT> {
   private Node<PropT>       source;
   private Node<PropT>       next;
-  private AbstractGuard<PropT> guard;
+  private Guard<PropT> guard;
   private String     action;
   private Attributes attributes;
 
-  public Edge (Node<PropT> s, Node<PropT> n, AbstractGuard<PropT> g, String a, Attributes as) {
+  public Edge (Node<PropT> s, Node<PropT> n, Guard<PropT> g, String a, Attributes as) {
     init(s, n, g, a, as);
   }
 
-  public Edge (Node<PropT> s, Node<PropT> n, AbstractGuard<PropT> g, String a) {
+  public Edge (Node<PropT> s, Node<PropT> n, Guard<PropT> g, String a) {
     init(s, n, g, a, null);
   }
 
-  public Edge (Node<PropT> s, Node<PropT> n, AbstractGuard<PropT> g) {
+  public Edge (Node<PropT> s, Node<PropT> n, Guard<PropT> g) {
     init(s, n, g, "-", null);
   }
 
@@ -84,7 +84,7 @@ public class Edge<PropT> {
     return attributes.getBoolean(name);
   }
 
-  public AbstractGuard<PropT> getGuard () {
+  public Guard<PropT> getGuard () {
     return guard;
   }
 
@@ -146,7 +146,7 @@ public class Edge<PropT> {
   }
 
   private void init (Node<PropT> s, Node<PropT> n,
-      AbstractGuard<PropT> g, String a, Attributes as) {
+      Guard<PropT> g, String a, Attributes as) {
     source = s;
     next = n;
     guard = g;

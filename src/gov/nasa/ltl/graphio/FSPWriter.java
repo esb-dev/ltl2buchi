@@ -5,9 +5,10 @@ package gov.nasa.ltl.graphio;
 
 import java.io.PrintStream;
 
-import gov.nasa.ltl.graph.AbstractGuard;
+import gov.nasa.ltl.graph.Guard;
 import gov.nasa.ltl.graph.Edge;
 import gov.nasa.ltl.graph.Graph;
+import gov.nasa.ltl.graph.Literal;
 import gov.nasa.ltl.graph.Node;
 import gov.nasa.ltl.trans.State;
 import gov.nasa.ltl.trans.Transition;
@@ -172,21 +173,26 @@ class FSPWriter<PropT> extends Writer<PropT> {
    * @see gov.nasa.ltl.graphio.Writer#write(gov.nasa.ltl.trans.Guard)
    */
   @Override
-  public void write (AbstractGuard<PropT> g) {
+  public void write (Guard<PropT> g) {
     boolean first = true;
     if (g.isEmpty ())
-      out.print ("TRUE");
-    for (int i = 0; i < g.size (); i++) {
+      write (new Literal<PropT> (null, false, true));
+    for (Literal<PropT> l: g) {
       if (!first)
         out.print ("&");
       first = false;
-      if (g.getTrue (i))
-        out.print ("TRUE");
-      else {
-        if(g.getNeg (i))
-          out.print ('!');
-        out.print (g.get (i));
-      }
+      write (l);
+    }
+  }
+
+  @Override
+  public void write (Literal<PropT> l) {
+    if (l.isTrue ())
+      out.print ("TRUE");
+    else {
+      if(l.isNegated ())
+        out.print ('!');
+      out.print (l.getAtom ());
     }
   }
 }

@@ -26,7 +26,7 @@ import java.util.TreeSet;
  * DOCUMENT ME!
  */
 public class ColorPair<PropT> extends Pair<TreeSet<ITypeNeighbor<PropT>>>
-implements Comparable<ColorPair<PropT>> {
+  implements Comparable<ColorPair<PropT>> {
   public ColorPair (int colorIn, TreeSet<ITypeNeighbor<PropT>> iMaxSetIn) {
     super(colorIn, iMaxSetIn);
   }
@@ -61,8 +61,7 @@ implements Comparable<ColorPair<PropT>> {
     // TreeSets are ordered !!
     Iterator<ITypeNeighbor<PropT>> otherIter = otherSet.iterator ();
     for (ITypeNeighbor<PropT> currNeigh: getIMaxSet()) {
-      if (!otherIter.hasNext ())
-        break;
+      assert otherIter.hasNext ();
       int comparison = currNeigh.compareTo(otherIter.next ());
 
       if ((comparison < 0) || (comparison > 0)) {
