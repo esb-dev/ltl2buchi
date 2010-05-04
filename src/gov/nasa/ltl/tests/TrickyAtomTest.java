@@ -12,34 +12,41 @@ import gov.nasa.ltl.trans.LTL2Buchi;
  * for a simpler atom type; the outputs for both parts should
  * be isomorphic. The formula used here is:
  * []((<>a)/\(a-><>b)/\(b-><>c))
+ * 
+ * The string representation of the TrickyAtom is "{c,i,j,k,l}",
+ * where c is the char it was passed, i is the number of TrickyAtom
+ * instances existing at the time, j is the number of toString calls
+ * made to TrickyAtoms, k compareTo calls, l equals calls.
  * @author estar
  *
  */
 public class TrickyAtomTest {
   private static class TrickyAtom implements Comparable<TrickyAtom> {
-    private char x;
-    private static int y = 0;
+    private final char x;
+    private static int instances = 0, toString = 0, compareTo = 0, equals = 0;
 
     public TrickyAtom (char c) {
       x = c;
-      y++;
+      synchronized(this.getClass()) {instances++;}
     }
 
     public String toString () {
-      return "{" + x + "," + (y++) + "}";
+      synchronized(this.getClass()) {toString++;}
+      return "{" + x + "," + instances + "," + toString + "," +
+        compareTo + "," + equals + "}";
     }
 
     @Override
     public int compareTo (TrickyAtom o) {
-      y++;
+      synchronized(this.getClass()) {compareTo++;}
       return (new Character (x)).compareTo (o.x);
     }
 
     @Override
     public boolean equals (Object o) {
-      y++;
+      synchronized(this.getClass()) {equals++;}
       return o != null && o instanceof TrickyAtom
-          && compareTo ((TrickyAtom) o) == 0;
+          && (o == this || compareTo ((TrickyAtom) o) == 0);
     }
   }
 
