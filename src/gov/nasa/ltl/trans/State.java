@@ -124,15 +124,10 @@ public class State<PropT> {//implements Comparable<State> { // removed (non-conf
     representativeId = id;
   }
 
-  public void step (Hashtable<String,Boolean> ProgramState,
+  public void step (Hashtable<PropT,Boolean> ProgramState,
                     TreeSet<State<PropT>> newStates, 
                     State<PropT>[] automaton) {
-    ListIterator<Transition<PropT>> iter = transitions.listIterator(0);
-    Transition<PropT> nextTrans;
-
-    while (iter.hasNext()) {
-      nextTrans = iter.next();
-
+    for (Transition<PropT> nextTrans: transitions) {
       if (nextTrans.enabled(ProgramState)) {
         newStates.add(automaton[nextTrans.goesTo()]);
       }

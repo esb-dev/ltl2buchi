@@ -75,7 +75,7 @@ public class Node<PropT> implements Comparable<Node<PropT>> { // removed (non-co
     Node<PropT> init = new Node<PropT>();
     init.nodeId = 0;
 
-    if (form.getContent() != 't') {
+    if (form.getContent() != Formula.Content.TRUE) {
       init.decompose_ands_for_next(form);
     }
 
@@ -191,7 +191,7 @@ public class Node<PropT> implements Comparable<Node<PropT>> { // removed (non-co
   }
 
   public void decompose_ands_for_next (Formula<PropT> form) {
-    if (form.getContent() == 'A') {
+    if (form.getContent() == Formula.Content.AND) {
       decompose_ands_for_next(form.getSub1());
       decompose_ands_for_next(form.getSub2());
     } else if (is_redundant(next, null, form) == false) {
@@ -254,7 +254,7 @@ public class Node<PropT> implements Comparable<Node<PropT>> { // removed (non-co
 
       // not redundant either
       // look in tech report why this only when not redundant
-      if (ita.getContent() == 'U') { // this is an until formula 
+      if (ita.getContent() == Formula.Content.UNTIL) { // this is an until formula 
         accepting.set(ita.get_untils_index());
 
         //      	System.out.println("Just set an eventuality requirement");
@@ -262,21 +262,16 @@ public class Node<PropT> implements Comparable<Node<PropT>> { // removed (non-co
 
       if (!ita.is_literal()) {
         switch (ita.getContent()) {
-        case 'U':
-        case 'W':
-        case 'V':
-        case 'O':
-
+        case UNTIL:
+        case WEAK_UNTIL:
+        case RELEASE:
+        case OR:
           Node<PropT> node2 = split(ita);
-
           return node2.expand(this.expand(states));
-
-        case 'X':
+        case NEXT:
           decompose_ands_for_next(ita.getSub1());
-
           return expand(states);
-
-        case 'A':
+        case AND:
           temp_form = ita.getSub1();
 
           if (!old.contains(temp_form)) {
@@ -290,7 +285,6 @@ public class Node<PropT> implements Comparable<Node<PropT>> { // removed (non-co
           }
 
           return expand(states);
-
         default:
           System.out.println("default case of switch entered");
 
@@ -300,7 +294,7 @@ public class Node<PropT> implements Comparable<Node<PropT>> { // removed (non-co
       {
         //	System.out.println("Now working on literal " + ita.getContent());
         // must do a test for contradictions first
-        if (ita.getContent() != 't') {
+        if (ita.getContent() != Formula.Content.TRUE) {
           old.add(ita);
         }
 
@@ -329,7 +323,7 @@ public class Node<PropT> implements Comparable<Node<PropT>> { // removed (non-co
                                                Formula<PropT> ita) {
     if ((ita.is_special_case_of_V(main_set)) || // my addition - correct??? 
         ((ita.is_synt_implied(main_set, next_set)) && 
-              (!(ita.getContent() == 'U') || 
+              (!(ita.getContent() == Formula.Content.UNTIL) || 
                 (ita.getSub2().is_synt_implied(main_set, next_set))))) {
       //System.out.println("Looks like formula was redundant");
       return true;
@@ -350,7 +344,8 @@ public class Node<PropT> implements Comparable<Node<PropT>> { // removed (non-co
     while (iterNext.hasNext()) {
       nextForm = iterNext.next();
 
-      if ((nextForm.getContent() != 'V') && (nextForm.getContent() != 'W')) {
+      if ((nextForm.getContent() != Formula.Content.RELEASE) && 
+          (nextForm.getContent() != Formula.Content.WEAK_UNTIL)) {
         return false;
       }
     }
@@ -400,7 +395,7 @@ public class Node<PropT> implements Comparable<Node<PropT>> { // removed (non-co
       Node2.toBeDone.add(temp_form);
     }
 
-    if (form.getContent() == 'V') // both subformulas are added to New2
+    if (form.getContent() == Formula.Content.RELEASE) // both subformulas are added to New2
     {
       temp_form = form.getSub1();
 

@@ -5,6 +5,7 @@ package gov.nasa.ltl.trans;
 
 
 import gov.nasa.ltl.graph.Literal;
+import gov.nasa.ltl.trans.Formula.Content;
 
 import java.util.Collection;
 
@@ -18,14 +19,14 @@ public class Guard<PropT> extends gov.nasa.ltl.graph.Guard<PropT> {
   public Guard(Collection<Formula<PropT>> literals) {
     for (Formula<PropT> f: literals) {
       switch(f.getContent ()) {
-      case 'p':
+      case ATOM:
         add (new Literal<PropT> (f.getName (), false, false));
         break;
-      case 'N':
-        assert f.getSub1 ().getContent () == 'p';
+      case NOT:
+        assert f.getSub1 ().getContent () == Content.ATOM;
         add (new Literal<PropT> (f.getSub1 ().getName (), true, false));
         break;
-      case 't':
+      case TRUE:
         add (new Literal<PropT> (null, false, true));
         break;
       default:

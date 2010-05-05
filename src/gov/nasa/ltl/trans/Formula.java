@@ -34,15 +34,34 @@ import java.util.*;
  * DOCUMENT ME!
  */
 public class Formula<PropT> implements Comparable<Formula<PropT>> {
+  public static enum Content {
+    ATOM('p'),
+    AND('A'),
+    OR('O'),
+    UNTIL('U'),
+    RELEASE('V'),
+    WEAK_UNTIL('W'),
+    NOT('N'),
+    NEXT('X'),
+    TRUE('t'),
+    FALSE('f');
+    
+    private final char c;
+    
+    private Content (char c) {
+      this.c = c;
+    }
+    
+    @Override
+    public String toString () {
+      return "" + c;
+    }
+  }
   private static int       nId = 0;
-  /* This declaration is intended like this:
-   * private static Hashtable<String, Formula<?>> matches = ...;
-   * where ? is PropT.
-   */
   private static Hashtable<String, Formula<?>> matches =
     new Hashtable<String, Formula<?>>();
   private static HashSet<Formula<?>> cache = new HashSet<Formula<?>>();
-  private char             content;
+  private Content          content;
   private boolean          literal;
   private Formula<PropT>   left;
   private Formula<PropT>   right;
@@ -52,7 +71,7 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
   private PropT            name;
   private boolean          has_been_visited;
 
-  private Formula (char c, boolean l, Formula<PropT> sx, Formula<PropT> dx, PropT n) {
+  private Formula (Content c, boolean l, Formula<PropT> sx, Formula<PropT> dx, PropT n) {
     id = nId++;
     content = c;
     literal = l;
@@ -64,6 +83,7 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
     has_been_visited = false;
   }
 
+  // TODO: check
   public static boolean is_reserved_char (char ch) {
     switch (ch) {
     //		case 't':
@@ -96,7 +116,7 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
     clearCache ();
   }
 
-  public char getContent () {
+  public Content getContent () {
     return content;
   }
 
@@ -106,25 +126,18 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
 
   public Formula<PropT> getNext () {
     switch (content) {
-    case 'U':
-    case 'W':
+    case UNTIL:
+    case WEAK_UNTIL:
+    case RELEASE:
       return this;
-
-    case 'V':
-      return this;
-
-    case 'O':
-      return null;
-
     default:
-
       //    System.out.println(content + " Switch did not find a relevant case...");
       return null;
     }
   }
 
   public Formula<PropT> getSub1 () {
-    if (content == 'V') {
+    if (content == Content.RELEASE) {
       return right;
     } else {
       return left;
@@ -132,7 +145,7 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
   }
 
   public Formula<PropT> getSub2 () {
-    if (content == 'V') {
+    if (content == Content.RELEASE) {
       return left;
     } else {
       return right;
@@ -154,7 +167,7 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
   public int countUntils (int acc_sets) {
     has_been_visited = true;
 
-    if (getContent() == 'U') {
+    if (getContent() == Content.UNTIL) {
       acc_sets++;
     }
 
@@ -210,7 +223,7 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
   }
 
   public boolean is_synt_implied (TreeSet<Formula<PropT>> old, TreeSet<Formula<PropT>> next) {
-    if (this.getContent() == 't') {
+    if (this.getContent() == Content.TRUE) {
       return true;
     }
 
@@ -218,68 +231,49 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
       return true;
     }
 
-    if (!is_literal()) // non-elementary formula
-    {
-      Formula<PropT> form1 = this.getSub1();
-      Formula<PropT> form2 = this.getSub2();
-      Formula<PropT> form3 = this.getNext();
+    if (is_literal ())
+      return false;
+    
+    Formula<PropT> form1 = this.getSub1();
+    Formula<PropT> form2 = this.getSub2();
+    Formula<PropT> form3 = this.getNext();
 
-      boolean condition1;
-      boolean condition2;
-      boolean condition3;
+    boolean condition1 = true;
+    boolean condition2 = true;
+    boolean condition3 = true;
 
-      if (form2 != null) {
-        condition2 = form2.is_synt_implied(old, next);
+    if (form2 != null)
+      condition2 = form2.is_synt_implied(old, next);
+    if (form1 != null)
+      condition1 = form1.is_synt_implied(old, next);
+    if (form3 != null)
+      if (next != null) {
+        condition3 = next.contains(form3);
       } else {
-        condition2 = true;
+        condition3 = false;
       }
 
+    switch (getContent()) {
+    case UNTIL:
+    case WEAK_UNTIL:
+    case OR:
+      return (condition2 || (condition1 && condition3));
+    case RELEASE:
+      return ((condition1 && condition2) || (condition1 && condition3));
+    case NEXT:
       if (form1 != null) {
-        condition1 = form1.is_synt_implied(old, next);
-      } else {
-        condition1 = true;
-      }
-
-      if (form3 != null) {
         if (next != null) {
-          condition3 = next.contains(form3);
+          return (next.contains(form1));
         } else {
-          condition3 = false;
+          return false;
         }
       } else {
-        condition3 = true;
+        return true;
       }
-
-      switch (getContent()) {
-      case 'U':
-      case 'W':
-      case 'O':
-        return (condition2 || (condition1 && condition3));
-
-      case 'V':
-        return ((condition1 && condition2) || (condition1 && condition3));
-
-      case 'X':
-
-        if (form1 != null) {
-          if (next != null) {
-            return (next.contains(form1));
-          } else {
-            return false;
-          }
-        } else {
-          return true;
-        }
-
-      case 'A':
-        return (condition2 && condition1);
-
-      default:
-        System.out.println("Default case of switch at Form.synt_implied");
-
-        return false;
-      }
-    } else {
+    case AND:
+      return (condition2 && condition1);
+    default:
+      System.out.println("Default case of switch at Form.synt_implied");
       return false;
     }
   }
@@ -291,7 +285,7 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
   public int processRightUntils (int current_index, int acc_sets) {
     has_been_visited = true;
 
-    if (getContent() == 'U') {
+    if (getContent() == Content.UNTIL) {
       this.untils_index = current_index;
 
       if (right.rightOfWhichUntils == null) {
@@ -327,25 +321,21 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
 
   public Formula<PropT> rewrite (Formula<String> rule, Formula<String> rewritten) {
     switch (content) {
-    case 'A':
-    case 'O':
-    case 'U':
-    case 'V':
-    case 'W':
+    case AND:
+    case OR:
+    case UNTIL:
+    case RELEASE:
+    case WEAK_UNTIL:
       left = left.rewrite(rule, rewritten);
       right = right.rewrite(rule, rewritten);
-
       break;
-
-    case 'X':
-    case 'N':
+    case NEXT:
+    case NOT:
       left = left.rewrite(rule, rewritten);
-
       break;
-
-    case 't':
-    case 'f':
-    case 'p':
+    case TRUE:
+    case FALSE:
+    case ATOM:
       break;
     }
 
@@ -364,129 +354,85 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
 
   public int size () {
     switch (content) {
-    case 'A':
-    case 'O':
-    case 'U':
-    case 'V':
-    case 'W':
+    case AND:
+    case OR:
+    case UNTIL:
+    case RELEASE:
+    case WEAK_UNTIL:
       return left.size() + right.size() + 1;
-
-    case 'X':
-    case 'N':
+    case NEXT:
+    case NOT:
       return left.size() + 1;
-
     default:
       return 0;
     }
   }
 
   public String toString (boolean exprId) {
-    if (!exprId) {
-      return toString();
-    }
+    String idTag = exprId ? "[" + id + "]" : "";
+    String conn = null;
+    String r = null;
 
     switch (content) {
-    case 'A':
-      return "( " + left.toString(true) + " /\\ " + right.toString(true) + 
-             " )[" + id + "]";
-
-    case 'O':
-      return "( " + left.toString(true) + " \\/ " + right.toString(true) + 
-             " )[" + id + "]";
-
-    case 'U':
-      return "( " + left.toString(true) + " U " + right.toString(true) + 
-             " )[" + id + "]";
-
-    case 'V':
-      return "( " + left.toString(true) + " V " + right.toString(true) + 
-             " )[" + id + "]";
-
-    case 'W':
-      return "( " + left.toString(true) + " W " + right.toString(true) + 
-             " )[" + id + "]";
-
+    case AND:
+      conn = "/\\";
+    case OR:
+      if (conn == null) conn = "\\/";
+    case UNTIL:
+      if (conn == null) conn = "U";
+    case RELEASE:
+      if (conn == null) conn = "V";
+    case WEAK_UNTIL:
+      if (conn == null) conn = "W";
+      r = "( " + left.toString (exprId) + " " + conn + " " +
+        right.toString (exprId) + " )";
+      break;
     //case 'M': return "( " + left.toString(true) + " M " + right.toString(true) + " )[" + id + "]";
-    case 'X':
-      return "( X " + left.toString(true) + " )[" + id + "]";
-
-    case 'N':
-      return "( ! " + left.toString(true) + " )[" + id + "]";
-
-    case 't':
-      return "( true )[" + id + "]";
-
-    case 'f':
-      return "( false )[" + id + "]";
-
-    case 'p':
-      return "( \"" + name + "\" )[" + id + "]";
-
+    case NEXT:
+      conn = "X";
+    case NOT:
+      if (conn == null) conn = "!";
+      r = "( " + conn + " " + left.toString (exprId) + " )";
+      break;
+    case TRUE:
+      conn = "true";
+    case FALSE:
+      if (conn == null) conn = "false";
+    case ATOM:
+      if (conn == null) conn = name.toString ();
     default:
-      return "( " + content + " )[" + id + "]";
+      if (conn == null) conn = content.toString ();
+      r = "( " + conn + " )";
     }
+    return r + idTag;
   }
 
   public String toString () {
-    switch (content) {
-    case 'A':
-      return "( " + left.toString() + " /\\ " + right.toString() + " )";
-
-    case 'O':
-      return "( " + left.toString() + " \\/ " + right.toString() + " )";
-
-    case 'U':
-      return "( " + left.toString() + " U " + right.toString() + " )";
-
-    case 'V':
-      return "( " + left.toString() + " V " + right.toString() + " )";
-
-    case 'W':
-      return "( " + left.toString() + " W " + right.toString() + " )";
-
-    //case 'M': return "( " + left.toString() + " M " + right.toString() + " )";
-    case 'X':
-      return "( X " + left.toString() + " )";
-
-    case 'N':
-      return "( ! " + left.toString() + " )";
-
-    case 't':
-      return "( true )";
-
-    case 'f':
-      return "( false )";
-
-    case 'p':
-      return "( \"" + name + "\" )";
-
-    default:
-      return new Character(content).toString();
-    }
+    return toString (false);
   }
 
   public static <PropT> Formula<PropT> Always (Formula<PropT> f) {
     // necessary for Java’s type inference to do its work 
     Formula<PropT> tmp = False();
-    return unique(new Formula<PropT>('V', false, tmp, f, null));
+    return unique(new Formula<PropT>(Content.RELEASE, false, tmp, f, null));
   }
 
   public static <PropT> Formula<PropT> And (Formula<PropT> sx, Formula<PropT> dx) {
     if (sx.id < dx.id) {
-      return unique(new Formula<PropT>('A', false, sx, dx, null));
+      return unique(new Formula<PropT>(Content.AND, false, sx, dx, null));
     } else {
-      return unique(new Formula<PropT>('A', false, dx, sx, null));
+      return unique(new Formula<PropT>(Content.AND, false, dx, sx, null));
     }
   }
 
   public static <PropT> Formula<PropT> Eventually (Formula<PropT> f) {
     // necessary for Java’s type inference to do its work 
     Formula<PropT> tmp = True();
-    return unique(new Formula<PropT>('U', false, tmp, f, null));
+    return unique(new Formula<PropT>(Content.UNTIL, false, tmp, f, null));
   }
 
   public static <PropT> Formula<PropT> False () {
-    return unique(new Formula<PropT>('f', true, null, null, null));
+    return unique(new Formula<PropT>(Content.FALSE, true, null, null, null));
   }
 
   public static <PropT> Formula<PropT> Implies (Formula<PropT> sx, Formula<PropT> dx) {
@@ -494,91 +440,79 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
   }
 
   public static <PropT> Formula<PropT> Next (Formula<PropT> f) {
-    return unique(new Formula<PropT>('X', false, f, null, null));
+    return unique(new Formula<PropT>(Content.NEXT, false, f, null, null));
   }
 
   public static <PropT> Formula<PropT> Not (Formula<PropT> f) {
     if (f.literal) {
       switch (f.content) {
-      case 't':
+      case TRUE:
         return False();
-
-      case 'f':
+      case FALSE:
         return True();
-
-      case 'N':
+      case NOT:
         return f.left;
-
       default:
-        return unique(new Formula<PropT>('N', true, f, null, null));
+        return unique(new Formula<PropT>(Content.NOT, true, f, null, null));
       }
     }
 
     // f is not a literal, so go on...
+    // The methods used here call unique() themselves.
     switch (f.content) {
-    case 'A':
+    case AND:
       return Or(Not(f.left), Not(f.right));
-
-    case 'O':
+    case OR:
       return And(Not(f.left), Not(f.right));
-
-    case 'U':
+    case UNTIL:
       return Release(Not(f.left), Not(f.right));
-
-    case 'V':
+    case RELEASE:
       return Until(Not(f.left), Not(f.right));
-
-    case 'W':
+    case WEAK_UNTIL:
       return WRelease(Not(f.left), Not(f.right));
-
     //case 'M': return WUntil(Not(f.left), Not(f.right));
-    case 'N':
+    case NOT:
       return f.left;
-
-    case 'X':
+    case NEXT:
       return Next(Not(f.left));
-
     default:
-      throw new ParserInternalError();
+      assert false : "found literal with is_literal() false";
+      return null;
     }
   }
 
   public static <PropT> Formula<PropT> Or (Formula<PropT> sx, Formula<PropT> dx) {
     if (sx.id < dx.id) {
-      return unique(new Formula<PropT>('O', false, sx, dx, null));
+      return unique(new Formula<PropT>(Content.OR, false, sx, dx, null));
     } else {
-      return unique(new Formula<PropT>('O', false, dx, sx, null));
+      return unique(new Formula<PropT>(Content.OR, false, dx, sx, null));
     }
   }
 
   public static <PropT> Formula<PropT> Proposition (PropT name) {
-    return unique(new Formula<PropT>('p', true, null, null, name));
+    return unique(new Formula<PropT>(Content.ATOM, true, null, null, name));
   }
 
   public static <PropT> Formula<PropT> Release (Formula<PropT> sx, Formula<PropT> dx) {
-    return unique(new Formula<PropT>('V', false, sx, dx, null));
+    return unique(new Formula<PropT>(Content.RELEASE, false, sx, dx, null));
   }
 
   public static <PropT> Formula<PropT> True () {
-    return unique(new Formula<PropT>('t', true, null, null, null));
+    return unique(new Formula<PropT>(Content.TRUE, true, null, null, null));
   }
 
   public static <PropT> Formula<PropT> Until (Formula<PropT> sx, Formula<PropT> dx) {
-    return unique(new Formula<PropT>('U', false, sx, dx, null));
+    return unique(new Formula<PropT>(Content.UNTIL, false, sx, dx, null));
   }
 
   public static <PropT> Formula<PropT> WRelease (Formula<PropT> sx, Formula<PropT> dx) {
-    return unique(new Formula<PropT>('U', false, dx, And(sx, dx), null));
+    return unique(new Formula<PropT>(Content.UNTIL, false, dx, And(sx, dx), null));
   }
 
   public static <PropT> Formula<PropT> WUntil (Formula<PropT> sx, Formula<PropT> dx) {
-    return unique(new Formula<PropT>('W', false, sx, dx, null));
+    return unique(new Formula<PropT>(Content.WEAK_UNTIL, false, sx, dx, null));
   }
 
-  /*private static void clearHT () {
-    ht = new Hashtable<String, Object>();
-  }*/
-  
   private static void clearCache() {
     cache = new HashSet<Formula<?>>();
   }
@@ -587,6 +521,7 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
     matches = new Hashtable<String, Formula<?>>();
   }
 
+  // TODO: make this handle id
   @SuppressWarnings ("unchecked")
   private static <PropT> Formula<PropT> unique (Formula<PropT> f) {
 //    String s = f.toString();
@@ -612,20 +547,20 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
       return false;
     Formula<?> f = (Formula<?>)obj;
     switch (content) {
-    case 'p':
+    case ATOM:
       return name.equals (f.name);
-    case 'A':
-    case 'O':
-    case 'U':
-    case 'V':
-    case 'W':
+    case AND:
+    case OR:
+    case UNTIL:
+    case RELEASE:
+    case WEAK_UNTIL:
       return f.content == content &&
         left.equals (f.left) && right.equals (f.right);
-    case 'N':
-    case 'X':
+    case NOT:
+    case NEXT:
       return f.content == content && left.equals (f.left);
-    case 't':
-    case 'f':
+    case TRUE:
+    case FALSE:
       return f.content == content;
     default:
       assert false : "unknown operator";
@@ -643,7 +578,7 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
   }
 
   private boolean match (Formula<String> rule) {
-    if (rule.content == 'p') {
+    if (rule.content == Content.ATOM) {
       Formula<PropT> match = getMatch(rule.name);
 
       if (match == null) {
@@ -660,12 +595,11 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
     }
 
     Hashtable<String, Formula<?>> saved = 
-      new Hashtable<String, Formula<?>>(matches);
+      new Hashtable<String, Formula<?>> (matches);
 
     switch (content) {
-    case 'A':
-    case 'O':
-
+    case AND:
+    case OR:
       if (left.match(rule.left) && right.match(rule.right)) {
         return true;
       }
@@ -679,11 +613,9 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
       matches = saved;
 
       return false;
-
-    case 'U':
-    case 'V':
-    case 'W':
-
+    case UNTIL:
+    case RELEASE:
+    case WEAK_UNTIL:
       if (left.match(rule.left) && right.match(rule.right)) {
         return true;
       }
@@ -691,9 +623,8 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
       matches = saved;
 
       return false;
-
-    case 'X':
-    case 'N':
+    case NEXT:
+    case NOT:
 
       if (left.match(rule.left)) {
         return true;
@@ -702,9 +633,8 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
       matches = saved;
 
       return false;
-
-    case 't':
-    case 'f':
+    case TRUE:
+    case FALSE:
       return true;
     }
 
@@ -715,46 +645,46 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
     Formula<PropT> r = null, s, t;
     // This is a bit verbose, to make type inference happen.
     switch (f.content) {
-    case 'p':
+    case ATOM:
       r = getMatch(f.name);
       break;
-    case 'A':
+    case AND:
       s = rewrite(f.left);
       t = rewrite(f.right);
       r = And(s, t);
       break;
-    case 'O':
+    case OR:
       s = rewrite(f.left);
       t = rewrite(f.right);
       r = Or(s, t);
       break;
-    case 'U':
+    case UNTIL:
       s = rewrite(f.left);
       t = rewrite(f.right);
       r = Until(s, t);
       break;
-    case 'V':
+    case RELEASE:
       s = rewrite(f.left);
       t = rewrite(f.right);
       r = Release(s, t);
       break;
-    case 'W':
+    case WEAK_UNTIL:
       s = rewrite(f.left);
       t = rewrite(f.right);
       r = WUntil(s, t);
       break;
-    case 'X':
+    case NEXT:
       s = rewrite(f.left);
       r = Next(s);
       break;
-    case 'N':
+    case NOT:
       s = rewrite(f.left);
       r = Not(s);
       break;
-    case 't':
+    case TRUE:
       r = True();
       break;
-    case 'f':
+    case FALSE:
       r = False();
     }
     if(r != null)

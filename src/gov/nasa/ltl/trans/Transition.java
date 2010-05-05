@@ -50,7 +50,7 @@ public class Transition<PropT> {
       Iterator<Formula<PropT>> it = propositions.iterator();
       Formula<PropT> nextForm = null;
       StringBuilder act = new StringBuilder();
-      char          cont; // stores content of formula
+      Formula.Content cont; // stores content of formula
       boolean       need_AND = false; // connect with AND multiple propositions
 
       while (it.hasNext()) {
@@ -64,13 +64,13 @@ public class Transition<PropT> {
         need_AND = true;
 
         switch (cont) {
-        case 'N':
+        case NOT:
           act.append('N');
           act.append(nextForm.getSub1().getName());
 
           break;
 
-        case 't':
+        case TRUE:
           act.append("TRUE");
 
           break;
@@ -129,46 +129,32 @@ public class Transition<PropT> {
     }
   }
 
-  public boolean enabled (Hashtable<String,Boolean> ProgramState) {
-    Iterator<Formula<PropT>> mustHold = propositions.iterator();
-    Formula<PropT> form = null;
-    Boolean  value;
-
-    while (mustHold.hasNext()) {
-      form = mustHold.next();
-
-      switch (form.getContent()) {
-      case 'N':
-        value = ProgramState.get(form.getSub1().getName());
-
-        if (value == null) {
-          //          System.out.println("Proposition not defined in program state");
-          return false;
-        } else if (value.booleanValue()) {
-          return false;
-        }
-
+  public boolean enabled (Hashtable<PropT,Boolean> ProgramState) {
+    for (Formula<PropT> literal: propositions) {
+      PropT atom = literal.getName ();
+      boolean negated = false;
+      
+      switch (literal.getContent ()) {
+      case TRUE:
         break;
-
-      case 't':
-        break;
-
-      case 'p':
-        value = ProgramState.get(form.getName());
-
-        if (value == null) {
-          //          System.out.println("Proposition not defined in program state");
+      case NOT:
+        atom = literal.getSub1 ().getName ();
+        negated = true;
+        // fall through
+      case ATOM:
+        if (!ProgramState.containsKey (atom))
           return false;
-        } else if (!value.booleanValue()) {
+        if ((ProgramState.get (atom) && negated)
+            || (!ProgramState.get (atom) && !negated))
           return false;
-        }
-
         break;
+      default:
+        assert false;
       }
     }
-
     return true;
   }
+
 
   public int goesTo () {
     return pointsTo;
