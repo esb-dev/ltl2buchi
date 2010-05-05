@@ -22,16 +22,164 @@ import java.io.*;
 
 // Added by ckong - Sept 7, 2001
 import java.io.StringReader;
+import java.util.Hashtable;
 
 
 /**
  * DOCUMENT ME!
  */
-public class Rewriter {
-  public static <PropT> Formula<PropT> applyRule (Formula<PropT> expr,
-                                                  Formula<String> rule, 
-                                                  Formula<String> rewritten) {
-    return expr.rewrite(rule, rewritten);
+public class Rewriter<PropT> {
+  private static Formula<String>[] rules;
+  static {
+    rules = null;
+    readRules ();
+  }
+  
+  private Formula<PropT> formula;
+  private Hashtable<String, Formula<PropT>> matches;
+  
+  public Rewriter(Formula<PropT> f) {
+    formula = f;
+  }
+  
+  private boolean match (Formula<PropT> f, Formula<String> rule) {
+    Formula<PropT> match;
+    Hashtable<String, Formula<PropT>> saved; 
+
+    if (rule.getContent () != f.getContent ()) {
+      return false;
+    }
+    saved = new Hashtable<String, Formula<PropT>> (matches);
+    switch (f.getContent ()) {
+    case PROPOSITION:
+      match = (Formula<PropT>)matches.get (rule.getName ());
+      if (match == null) {
+        matches.put (rule.getName (), f);
+        return true;
+      }
+      return match == f;
+    case AND:
+    case OR:
+      if (match (f.getSub1 (), rule.getSub1 ()) &&
+          match(f.getSub2 (), rule.getSub2 ())) {
+        return true;
+      }
+      matches = saved;
+      if (match (f.getSub2 (), rule.getSub1 ()) &&
+          match(f.getSub1 (), rule.getSub2 ())) {
+        return true;
+      }
+      matches = saved;
+      return false;
+    case UNTIL:
+    case RELEASE:
+    case WEAK_UNTIL:
+      if (match (f.getSub1 (), rule.getSub1 ()) &&
+          match(f.getSub2 (), rule.getSub2 ())) {
+        return true;
+      }
+      matches = saved;
+      return false;
+    case NEXT:
+    case NOT:
+      if (match (f.getSub1 (), rule.getSub1 ())) {
+        return true;
+      }
+      matches = saved;
+      return false;
+    case TRUE:
+    case FALSE:
+      return true;
+    default: // can’t happen
+      return false;
+    }
+  }
+
+  private Formula<PropT> substituteMatches (Formula<String> f) {
+    Formula<PropT> r = null, s, t;
+    // This is a bit verbose, to make type inference happen.
+    switch (f.getContent ()) {
+    case PROPOSITION:
+      r = (Formula<PropT>)matches.get (f.getName ());
+      break;
+    case AND:
+      s = substituteMatches (f.getSub1 ());
+      t = substituteMatches (f.getSub2 ());
+      r = Formula.And(s, t);
+      break;
+    case OR:
+      s = substituteMatches (f.getSub1 ());
+      t = substituteMatches (f.getSub2 ());
+      r = Formula.Or(s, t);
+      break;
+    case UNTIL:
+      s = substituteMatches (f.getSub1 ());
+      t = substituteMatches (f.getSub2 ());
+      r = Formula.Until(s, t);
+      break;
+    case RELEASE:
+      s = substituteMatches (f.getSub1 ());
+      t = substituteMatches (f.getSub2 ());
+      r = Formula.Release(t, s); // because left/right had been switched
+      break;
+    case WEAK_UNTIL:
+      s = substituteMatches (f.getSub1 ());
+      t = substituteMatches (f.getSub2 ());
+      r = Formula.WUntil(s, t);
+      break;
+    case NEXT:
+      s = substituteMatches (f.getSub1 ());
+      r = Formula.Next(s);
+      break;
+    case NOT:
+      s = substituteMatches (f.getSub1 ());
+      r = Formula.Not(s);
+      break;
+    case TRUE:
+      r = Formula.True();
+      break;
+    case FALSE:
+      r = Formula.False();
+    }
+    return r;
+  }
+
+  /**
+   * Attempt to apply a rewrite rule to this rewriter’s formula.
+   * @param rule top half of the rule
+   * @param rewritten bottom half of the rule
+   * @return true if the rule was applied, false else
+   * @throws ParseErrorException if the rule was malformed
+   */
+  private boolean rewrite (Formula<String> rule, Formula<String> rewritten)
+    throws ParseErrorException {
+    switch (formula.getContent ()) {
+    case AND:
+    case OR:
+    case UNTIL:
+    case WEAK_UNTIL:
+      formula.addLeft (new Rewriter<PropT> (formula.getSub1 ()).rewrite ());
+      formula.addRight (new Rewriter<PropT> (formula.getSub2 ()).rewrite ());
+      break;
+    case RELEASE:
+      formula.addRight (new Rewriter<PropT> (formula.getSub1 ()).rewrite ());
+      formula.addLeft (new Rewriter<PropT> (formula.getSub2 ()).rewrite ());
+      break;
+    case NEXT:
+    case NOT:
+      formula.addLeft (new Rewriter<PropT> (formula.getSub1 ()).rewrite ());
+      break;
+    case TRUE:
+    case FALSE:
+    case PROPOSITION:
+      return false;
+    }
+    matches = new Hashtable<String, Formula<PropT>> ();
+    if (match (formula, rule)) {
+      formula = substituteMatches (rewritten);
+      return true;
+    }
+    return false;
   }
 
   public static void main (String[] args) {
@@ -44,7 +192,7 @@ public class Rewriter {
           Formula<String> f = Parser.parse(args[i]);
 
           osize += f.size();
-          System.out.println(f = rewrite(f));
+          System.out.println(f = new Rewriter<String> (f).rewrite());
           rsize += f.size();
 
           System.err.println(((rsize * 100) / osize) + "% (" + osize + 
@@ -68,7 +216,7 @@ public class Rewriter {
             Formula<String> f = Parser.parse(line);
 
             osize += f.size();
-            System.out.println(f = rewrite(f));
+            System.out.println(f = new Rewriter<String> (f).rewrite ());
             rsize += f.size();
 
             System.err.println(((rsize * 100) / osize) + "% (" + osize + 
@@ -86,8 +234,8 @@ public class Rewriter {
   }
 
   @SuppressWarnings ("unchecked")
-  public static Formula<String>[] readRules () {
-    Formula<String>[] rules = (Formula<String>[])new Formula[0];
+  public static void readRules () {
+    rules = new Formula[0];
 
     try {
       // Modified by ckong - Sept 7, 2001
@@ -138,55 +286,28 @@ public class Rewriter {
       System.err.println("parse error: " + e.getMessage());
       System.exit(1);
     }
-
-    return rules;
   }
 
-  public static String rewrite (String expr) throws ParseErrorException {
-    try {
-      //   	System.out.println("String is: " + expr);
-      Formula<String> formula = Parser.parse(expr);
-
-      //    	System.out.println("And after parsing " + formula.toString());
-      return rewrite(formula).toString();
-    } catch (ParseErrorException e) {
-      throw new ParseErrorException(e.getMessage());
-    }
-  }
-
-  public static <PropT> Formula<PropT> rewrite (Formula<PropT> expr)
+  public Formula<PropT> rewrite ()
     throws ParseErrorException {
-    //  	System.out.println("testing if gets in here");
-    Formula<String>[] rules = readRules();
-
-    if (rules == null) {
-      return expr;
-    }
-
     boolean negated = false;
     boolean changed;
 
+    if (rules == null)
+      return formula;
+    if (formula.is_literal () || formula.isRewritten ()) {
+      formula.setRewritten ();
+      return formula;
+    }
     do {
-      Formula<PropT> old;
       changed = false;
-
-      do {
-        old = expr;
-
-        for (int i = 0; i < rules.length; i += 2) {
-          expr = applyRule(expr, rules[i], rules[i + 1]);
-        }
-
-        if (old != expr) {
+      for (int i = 0; i + 1 < rules.length; i += 2)
+        if (rewrite (rules[i], rules[i + 1]))
           changed = true;
-        }
-      } while (old != expr);
-
       negated = !negated;
-      expr = Formula.Not (expr);
-//        expr = Parser.parse("!" + expr.toString());
+      formula = Formula.Not (formula);
     } while (changed || negated);
-
-    return expr;
+    formula.setRewritten ();
+    return formula;
   }
 }

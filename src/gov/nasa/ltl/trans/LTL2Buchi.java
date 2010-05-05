@@ -138,28 +138,24 @@ public class LTL2Buchi {
 			boolean bisim, boolean fair_sim) throws ParseErrorException {
 		//	System.out.println("Translating formula: " + formula);
 		// System.out.println();
-		if (rewrite) {
-			try {
-				formula = Rewriter.rewrite(formula);
-			} catch (ParseErrorException e) {
-				throw new ParseErrorException(e.getMessage());
-			}
-
-			System.out.println("Rewritten as       : " + formula);
-			System.out.println();
-		}
-
-		if (formula == null) {
-			System.out.println("Unexpected null formula");
-		}
-		
 		return translate(Parser.parse (formula), rewrite, bisim, fair_sim);
 	}
 
 	public static <PropT> Graph<PropT> translate(Formula<PropT> formula,
-	    boolean rewrite, boolean bisim, boolean fair_sim) {
+	    boolean rewrite, boolean bisim, boolean fair_sim) throws ParseErrorException {
 	    boolean superset = true;
         boolean scc = true;
+
+        if (rewrite) {
+          try {
+              formula = new Rewriter<PropT> (formula).rewrite();
+          } catch (ParseErrorException e) {
+              throw new ParseErrorException(e.getMessage());
+          }
+
+          System.out.println("Rewritten as       : " + formula);
+          System.out.println();
+        }
 
 		Graph<PropT> gba = Translator.translate(formula);
 
@@ -276,7 +272,7 @@ public class LTL2Buchi {
 		return translate(formula, true, true, true);
 	}
 	
-	public static <PropT> Graph<PropT> translate(Formula<PropT> formula) {
+	public static <PropT> Graph<PropT> translate(Formula<PropT> formula) throws ParseErrorException {
 	    return translate(formula, true, true, true);
 	}
 

@@ -162,7 +162,7 @@ public class Parser {
 
           try {
             while (Character.isJavaIdentifierPart (ch = i.get ())
-                && (!Formula.is_reserved_char (ch))) {
+                && (!Parser.is_reserved_char (ch))) {
               sbf.append (ch);
               i.skip ();
             }
@@ -368,5 +368,31 @@ public class Parser {
   private static final int P_NEXT = 6;
   private static final int P_ALWAYS = 6;
   private static final int P_EVENTUALLY = 6;
+
+  private static boolean is_reserved_char (char ch) {
+    switch (ch) {
+    //		case 't':
+    //		case 'f':
+    case 'U':
+    case 'V':
+    case 'W':
+    case 'M':
+    case 'X':
+    case ' ':
+    case '<':
+    case '>':
+    case '(':
+    case ')':
+    case '[':
+    case ']':
+    case '-':
+  
+      // ! not allowed by Java identifiers anyway - maybe some above neither?
+      return true;
+  
+    default:
+      return false;
+    }
+  }
 
 }

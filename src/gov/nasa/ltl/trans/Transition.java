@@ -141,7 +141,7 @@ public class Transition<PropT> {
         atom = literal.getSub1 ().getName ();
         negated = true;
         // fall through
-      case ATOM:
+      case PROPOSITION:
         if (!ProgramState.containsKey (atom))
           return false;
         if ((ProgramState.get (atom) && negated)

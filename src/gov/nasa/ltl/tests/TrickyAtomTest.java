@@ -4,6 +4,7 @@ import gov.nasa.ltl.graph.Graph;
 import gov.nasa.ltl.graphio.Writer;
 import gov.nasa.ltl.trans.Formula;
 import gov.nasa.ltl.trans.LTL2Buchi;
+import gov.nasa.ltl.trans.ParseErrorException;
 
 /**
  * This class tests formula instantiation and transformation
@@ -50,7 +51,7 @@ public class TrickyAtomTest {
     }
   }
 
-  public static void main (String[] args) {
+  public static void main (String[] args) throws ParseErrorException {
     LTL2Buchi.debug = true;
     System.out.println ("Easy:");
     Formula<Character> easy = Formula.Always (Formula.And (Formula.And (Formula

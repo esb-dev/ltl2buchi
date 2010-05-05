@@ -19,11 +19,11 @@ public class Guard<PropT> extends gov.nasa.ltl.graph.Guard<PropT> {
   public Guard(Collection<Formula<PropT>> literals) {
     for (Formula<PropT> f: literals) {
       switch(f.getContent ()) {
-      case ATOM:
+      case PROPOSITION:
         add (new Literal<PropT> (f.getName (), false, false));
         break;
       case NOT:
-        assert f.getSub1 ().getContent () == Content.ATOM;
+        assert f.getSub1 ().getContent () == Content.PROPOSITION;
         add (new Literal<PropT> (f.getSub1 ().getName (), true, false));
         break;
       case TRUE:
