@@ -21,27 +21,145 @@ package gov.nasa.ltl.trans;
 import java.io.*;
 
 // Added by ckong - Sept 7, 2001
-import java.io.StringReader;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.LinkedList;
 
 
 /**
- * DOCUMENT ME!
+ * This class provides the means to rewriting a formula according to
+ * some set of simplification rules. A rule is a pair of
+ * {@link Formula}&lt;String&gt; instances, with the atoms of the first
+ * formula being used as variables.
+ * 
+ * Rules are read at class loading time from the file given by the
+ * <code>gov.nasa.ltl.trans.rules</code> property, if it is set, and
+ * by {@link RulesClass#getRules()} otherwise.
+ * 
+ * Rules are applied until no rule matches. This class does not ensure
+ * that the process is finite, so the rules have to be chosen carefully.
  */
 public class Rewriter<PropT> {
   private static Formula<String>[] rules;
   static {
     rules = null;
-    readRules ();
+    readRules (null);
   }
   
   private Formula<PropT> formula;
   private Hashtable<String, Formula<PropT>> matches;
+  /* Make a snapshot of the rules in case the static ones change
+   * during rewriting.
+   */
+  private Formula<String>[] instanceRules =
+    Arrays.copyOf (rules, rules.length);
+  /* Keep track of (sub)formulae we’ve already rewritten.
+   * The container class is so that we compare instances directly
+   * instead of checking the formula structure.
+   */
+  private class FormulaContainer {
+    private final Formula<PropT> f;
+    public FormulaContainer(Formula<PropT> fo) {f = fo;}
+    @Override public boolean equals (Object obj) {return obj == f;}
+  }
+  private HashSet<FormulaContainer> rewritten =
+    new HashSet<FormulaContainer> ();
   
+  /**
+   * Create a rewriter for the given formula, which might be modified
+   * by {@link #rewrite()}.
+   * @param f
+   */
   public Rewriter(Formula<PropT> f) {
     formula = f;
   }
+
+  /**
+   * Rewrite this instance’s formula according to the loaded rules. That
+   * formula might be modified in the process. This method is not
+   * guaranteed to terminate unless the rules are chosen suitably
+   * (e. g. only shortening and/or only away from some operators).
+   * @return instance of simplified formula; this is usually not
+   *    the same instance which was passed to the constructor.
+   */
+  public Formula<PropT> rewrite () {
+    boolean negated = false;
+    boolean changed;
+
+    assert rules != null : "rules not loaded";
+    if (formula.is_literal () || isRewritten (formula)) {
+      markRewritten (formula);
+      return formula;
+    }
+    do {
+      changed = false;
+      for (int i = 0; i + 1 < instanceRules.length; i += 2)
+        if (rewrite (instanceRules[i], instanceRules[i + 1]))
+          changed = true;
+      negated = !negated;
+      formula = Formula.Not (formula);
+    } while (changed || negated);
+    markRewritten (formula);
+    return formula;
+  }
   
+  private boolean isRewritten (Formula<PropT> f) {
+    return rewritten.contains (new FormulaContainer (f));
+  }
+  
+  private void markRewritten (Formula<PropT> f) {
+    rewritten.add (new FormulaContainer (f));
+  }
+
+  /**
+   * Attempt to apply a rewrite rule to this rewriter’s formula.
+   * @param rule top half of the rule
+   * @param rewritten bottom half of the rule
+   * @return true if the rule was applied, false else
+   */
+  private boolean rewrite (Formula<String> rule, Formula<String> rewritten) {
+    switch (formula.getContent ()) {
+    case AND:
+    case OR:
+    case UNTIL:
+    case WEAK_UNTIL:
+      formula.addLeft (new Rewriter<PropT> (formula.getSub1 ()).rewrite ());
+      formula.addRight (new Rewriter<PropT> (formula.getSub2 ()).rewrite ());
+      break;
+    case RELEASE:
+      formula.addRight (new Rewriter<PropT> (formula.getSub1 ()).rewrite ());
+      formula.addLeft (new Rewriter<PropT> (formula.getSub2 ()).rewrite ());
+      break;
+    case NEXT:
+    case NOT:
+      formula.addLeft (new Rewriter<PropT> (formula.getSub1 ()).rewrite ());
+      break;
+    case TRUE:
+    case FALSE:
+    case PROPOSITION:
+      return false;
+    }
+    matches = new Hashtable<String, Formula<PropT>> ();
+    if (match (formula, rule)) {
+      formula = substituteMatches (rewritten);
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Attempt to match this instance’s formula against the first part of
+   * a rewrite rule by checking that they have the same structure and
+   * by adding variable name/formula pairs to {@link #matches}.
+   * This method expects {@link #matches} to be empty when
+   * called from another method.
+   * @param f (sub)formula to match against a rule
+   * @param rule (sub)formula of the rule pattern
+   * @return true if the subformula matched the pattern; in this case,
+   *    {@link #matches} contains the necessary variable values.
+   *    False else.
+   */
   private boolean match (Formula<PropT> f, Formula<String> rule) {
     Formula<PropT> match;
     Hashtable<String, Formula<PropT>> saved; 
@@ -95,6 +213,14 @@ public class Rewriter<PropT> {
     }
   }
 
+  /**
+   * Build a formula by replacing variables in the second part of a rule
+   * by the corresponding values from {@link #matches}, which has been
+   * initialised by a prior {@link #match(Formula, Formula)} call with
+   * the first part of the same rule.
+   * @param f second part of the rule
+   * @return formula after rule application
+   */
   private Formula<PropT> substituteMatches (Formula<String> f) {
     Formula<PropT> r = null, s, t;
     // This is a bit verbose, to make type inference happen.
@@ -145,169 +271,53 @@ public class Rewriter<PropT> {
   }
 
   /**
-   * Attempt to apply a rewrite rule to this rewriter’s formula.
-   * @param rule top half of the rule
-   * @param rewritten bottom half of the rule
-   * @return true if the rule was applied, false else
-   * @throws ParseErrorException if the rule was malformed
+   * Read a set of rewrite rules from a file or from {@link RulesClass}
+   * and replace the current set of rules, if any.
+   * If the given filename is not null, it is used. Else, if the
+   * property <code>gov.nasa.ltl.trans.rules</code> is set, it is used.
+   * Else, the rules are obtained from {@link RulesClass#getRules()}.
+   * @param filename
    */
-  private boolean rewrite (Formula<String> rule, Formula<String> rewritten)
-    throws ParseErrorException {
-    switch (formula.getContent ()) {
-    case AND:
-    case OR:
-    case UNTIL:
-    case WEAK_UNTIL:
-      formula.addLeft (new Rewriter<PropT> (formula.getSub1 ()).rewrite ());
-      formula.addRight (new Rewriter<PropT> (formula.getSub2 ()).rewrite ());
-      break;
-    case RELEASE:
-      formula.addRight (new Rewriter<PropT> (formula.getSub1 ()).rewrite ());
-      formula.addLeft (new Rewriter<PropT> (formula.getSub2 ()).rewrite ());
-      break;
-    case NEXT:
-    case NOT:
-      formula.addLeft (new Rewriter<PropT> (formula.getSub1 ()).rewrite ());
-      break;
-    case TRUE:
-    case FALSE:
-    case PROPOSITION:
-      return false;
-    }
-    matches = new Hashtable<String, Formula<PropT>> ();
-    if (match (formula, rule)) {
-      formula = substituteMatches (rewritten);
-      return true;
-    }
-    return false;
-  }
-
-  public static void main (String[] args) {
-    int osize = 0;
-    int rsize = 0;
-
-    try {
-      if (args.length != 0) {
-        for (int i = 0; i < args.length; i++) {
-          Formula<String> f = Parser.parse(args[i]);
-
-          osize += f.size();
-          System.out.println(f = new Rewriter<String> (f).rewrite());
-          rsize += f.size();
-
-          System.err.println(((rsize * 100) / osize) + "% (" + osize + 
-                             " => " + rsize + ")");
-        }
-      } else {
-        BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
-
-        while (true) {
-          try {
-            String line = in.readLine();
-
-            if (line == null) {
-              break;
-            }
-
-            if (line.equals("")) {
-              continue;
-            }
-
-            Formula<String> f = Parser.parse(line);
-
-            osize += f.size();
-            System.out.println(f = new Rewriter<String> (f).rewrite ());
-            rsize += f.size();
-
-            System.err.println(((rsize * 100) / osize) + "% (" + osize + 
-                               " => " + rsize + ")");
-          } catch (IOException e) {
-            System.out.println("error");
-
-            break;
-          }
-        }
-      }
-    } catch (ParseErrorException e) {
-      System.err.println("parse error: " + e.getMessage());
-    }
-  }
-
   @SuppressWarnings ("unchecked")
-  public static void readRules () {
-    rules = new Formula[0];
+  public static void readRules (String filename) {
+    String rulesPath = filename != null ? filename :
+      System.getProperty ("gov.nasa.ltl.trans.rules");
+    BufferedReader in = null;
+    LinkedList<Formula<String>> rulesList = new LinkedList<Formula<String>> ();
 
     try {
-      // Modified by ckong - Sept 7, 2001
-
-      /*
-         FileReader fr = null;
-         
-               for(int i = 0, l = ClassPath.length(); i < l; i++)
-           try {
-             fr = new FileReader(ClassPath.get(i) + File.separator + "gov.nasa.ltl.trans.rules".replace('.', File.separatorChar));
-           } catch(FileNotFoundException e) {
-           }
-         
-               if(fr == null) {
-           try {
-             fr = new FileReader("rules");
-           } catch(FileNotFoundException e) {
-           }
-               }
-         
-               if(fr == null) return null;
-               
-               BufferedReader in = new BufferedReader(fr);
-       */
-      BufferedReader in = new BufferedReader(
-                                new StringReader(RulesClass.getRules()));
-
-      while (true) {
-        String line = in.readLine();
-
-        if (line == null) {
-          break;
-        }
-
-        if (line.equals("")) {
-          continue;
-        }
-
-        Formula<String>   rule = Parser.parse(line);
-
-        Formula<String>[] n = (Formula<String>[])new Formula[rules.length + 1];
-        System.arraycopy(rules, 0, n, 0, rules.length);
-        n[rules.length] = rule;
-        rules = n;
+      if (rulesPath != null) {
+        FileReader fr = new FileReader (rulesPath);
+        in = new BufferedReader (fr);
+      } else
+        in = new BufferedReader (new StringReader (RulesClass.getRules ()));
+    } catch (FileNotFoundException e) {
+      System.err.println ("Rules file " + rulesPath + " not found.");
+      System.exit (1);
+    }
+    // Modified by ckong - Sept 7, 2001
+    while (true) {
+      String line = null;
+      Formula<String> rule = null;
+      
+      try {
+        line = in.readLine();
+      } catch (IOException e) {
+        System.err.println ("Failed read from " + in);
+        System.exit (1);
       }
-    } catch (IOException e) {
-    } catch (ParseErrorException e) {
-      System.err.println("parse error: " + e.getMessage());
-      System.exit(1);
+      if (line == null)
+        break;
+      if (line.equals (""))
+        continue;
+      try {
+        rule = Parser.parse (line);
+      } catch (ParseErrorException e) {
+        System.err.println ("Exception while reading rules: " + e);
+        System.exit (1);
+      }
+      rulesList.add (rule);
     }
-  }
-
-  public Formula<PropT> rewrite ()
-    throws ParseErrorException {
-    boolean negated = false;
-    boolean changed;
-
-    if (rules == null)
-      return formula;
-    if (formula.is_literal () || formula.isRewritten ()) {
-      formula.setRewritten ();
-      return formula;
-    }
-    do {
-      changed = false;
-      for (int i = 0; i + 1 < rules.length; i += 2)
-        if (rewrite (rules[i], rules[i + 1]))
-          changed = true;
-      negated = !negated;
-      formula = Formula.Not (formula);
-    } while (changed || negated);
-    formula.setRewritten ();
-    return formula;
+    rules = (Formula<String>[]) rulesList.toArray (new Formula[]{});
   }
 }

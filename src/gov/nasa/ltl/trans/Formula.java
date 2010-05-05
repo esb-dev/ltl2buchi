@@ -62,7 +62,6 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
   private BitSet           rightOfWhichUntils; // for bug fix - formula can be right of >1 untils
   private PropT            name;
   private boolean          has_been_visited;
-  private boolean          rewritten = false;
 
   private Formula (Content c, Formula<PropT> sx, Formula<PropT> dx, PropT n) {
     id = nId++;
@@ -85,7 +84,6 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
         (BitSet)f.rightOfWhichUntils.clone () : null;
     name = f.name;
     has_been_visited = f.has_been_visited;
-    rewritten = f.rewritten;
   }
 
   public static void reset_static () {
@@ -304,6 +302,10 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
     }
   }
 
+  /**
+   * Computes the length of the formula.
+   * @return number of logical operators and atoms in the formula
+   */
   public int size () {
     switch (content) {
     case AND:
@@ -315,9 +317,13 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
     case NEXT:
     case NOT:
       return left.size() + 1;
-    default:
-      return 0;
+    case PROPOSITION:
+    case TRUE:
+    case FALSE:
+      return 1;
     }
+    // can’t happen
+    return 0;
   }
 
   public String toString (boolean exprId) {
@@ -504,19 +510,5 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
       assert false : "unknown operator";
     }
     return false;
-  }
-
-  /**
-   * @param rewritten the rewritten to set
-   */
-  public void setRewritten () {
-    rewritten = true;
-  }
-
-  /**
-   * @return the rewritten
-   */
-  public boolean isRewritten () {
-    return rewritten;
   }
 }

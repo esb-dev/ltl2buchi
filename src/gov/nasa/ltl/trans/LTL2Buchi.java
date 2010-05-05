@@ -147,12 +147,7 @@ public class LTL2Buchi {
         boolean scc = true;
 
         if (rewrite) {
-          try {
-              formula = new Rewriter<PropT> (formula).rewrite();
-          } catch (ParseErrorException e) {
-              throw new ParseErrorException(e.getMessage());
-          }
-
+          formula = new Rewriter<PropT> (formula).rewrite();
           System.out.println("Rewritten as       : " + formula);
           System.out.println();
         }

@@ -60,7 +60,7 @@ public class Parser {
   static class EndOfInputException extends Exception {
   }
 
-  static Formula<String> parse (String str) throws ParseErrorException { // "aObAc"
+  public static Formula<String> parse (String str) throws ParseErrorException { // "aObAc"
 
     Input i = new Input (str);
 
