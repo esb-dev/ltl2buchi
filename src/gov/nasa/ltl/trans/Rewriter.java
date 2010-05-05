@@ -60,19 +60,33 @@ public class Rewriter<PropT> {
    */
   private class FormulaContainer {
     private final Formula<PropT> f;
-    public FormulaContainer(Formula<PropT> fo) {f = fo;}
-    @Override public boolean equals (Object obj) {return obj == f;}
+    public FormulaContainer(Formula<PropT> fo) { f = fo; }
+    @Override public int hashCode () { return f.getId (); }
+    @Override public boolean equals (Object obj) {
+      return obj != null && obj instanceof Rewriter<?>.FormulaContainer 
+        && hashCode () == obj.hashCode ();}
   }
-  private HashSet<FormulaContainer> rewritten =
-    new HashSet<FormulaContainer> ();
+  private HashSet<FormulaContainer> rewritten;
   
   /**
    * Create a rewriter for the given formula, which might be modified
    * by {@link #rewrite()}.
    * @param f
    */
-  public Rewriter(Formula<PropT> f) {
+  public Rewriter (Formula<PropT> f) {
     formula = f;
+    rewritten = new HashSet<FormulaContainer> ();
+  }
+
+  /**
+   * Initialise an instance for a subformula.
+   * @param f subformula
+   * @param r set of formulae which have already been rewritten by
+   *    {@link Rewriter} ancestors of this instance
+   */
+  protected Rewriter (Formula<PropT> f, HashSet<FormulaContainer> r) {
+    formula = f;
+    rewritten = r;
   }
 
   /**
@@ -89,7 +103,6 @@ public class Rewriter<PropT> {
 
     assert rules != null : "rules not loaded";
     if (formula.is_literal () || isRewritten (formula)) {
-      markRewritten (formula);
       return formula;
     }
     do {
@@ -104,10 +117,20 @@ public class Rewriter<PropT> {
     return formula;
   }
   
+  /**
+   * Check for a given formula whether it is the end product
+   * of rewriting.
+   * @param f
+   * @return
+   */
   private boolean isRewritten (Formula<PropT> f) {
     return rewritten.contains (new FormulaContainer (f));
   }
   
+  /**
+   * Mark a formula as the end product of rewriting.
+   * @param f
+   */
   private void markRewritten (Formula<PropT> f) {
     rewritten.add (new FormulaContainer (f));
   }
@@ -115,25 +138,30 @@ public class Rewriter<PropT> {
   /**
    * Attempt to apply a rewrite rule to this rewriter’s formula.
    * @param rule top half of the rule
-   * @param rewritten bottom half of the rule
+   * @param target bottom half of the rule
    * @return true if the rule was applied, false else
    */
-  private boolean rewrite (Formula<String> rule, Formula<String> rewritten) {
+  private boolean rewrite (Formula<String> rule, Formula<String> target) {
+    Formula<PropT> f1 = formula.getSub1 (), f2 = formula.getSub2 ();
+    if (f1 != null)
+      f1 = new Rewriter<PropT> (f1, rewritten).rewrite ();
+    if (f2 != null)
+      f2 = new Rewriter<PropT> (f2, rewritten).rewrite ();
     switch (formula.getContent ()) {
     case AND:
     case OR:
     case UNTIL:
     case WEAK_UNTIL:
-      formula.addLeft (new Rewriter<PropT> (formula.getSub1 ()).rewrite ());
-      formula.addRight (new Rewriter<PropT> (formula.getSub2 ()).rewrite ());
+      formula.addLeft (f1);
+      formula.addRight (f2);
       break;
-    case RELEASE:
-      formula.addRight (new Rewriter<PropT> (formula.getSub1 ()).rewrite ());
-      formula.addLeft (new Rewriter<PropT> (formula.getSub2 ()).rewrite ());
+    case RELEASE: // Sub1, Sub2 are swapped in this case
+      formula.addRight (f1);
+      formula.addLeft (f2);
       break;
     case NEXT:
     case NOT:
-      formula.addLeft (new Rewriter<PropT> (formula.getSub1 ()).rewrite ());
+      formula.addLeft (f1);
       break;
     case TRUE:
     case FALSE:
@@ -142,7 +170,7 @@ public class Rewriter<PropT> {
     }
     matches = new Hashtable<String, Formula<PropT>> ();
     if (match (formula, rule)) {
-      formula = substituteMatches (rewritten);
+      formula = substituteMatches (target);
       return true;
     }
     return false;

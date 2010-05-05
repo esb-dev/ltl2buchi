@@ -511,4 +511,8 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
     }
     return false;
   }
+  
+  int getId () {
+    return id;
+  }
 }
