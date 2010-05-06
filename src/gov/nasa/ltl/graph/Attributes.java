@@ -36,12 +36,7 @@ public class Attributes {
   }
 
   public Attributes (Attributes a) {
-    ht = new Hashtable<Object, String>();
-
-    for (Enumeration<Object> e = a.ht.keys(); e.hasMoreElements();) {
-      Object key = e.nextElement();
-      ht.put(key, a.ht.get(key));
-    }
+    ht = new Hashtable<Object, String>(a.ht);
   }
 
   public Attributes (String s) {

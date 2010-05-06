@@ -18,10 +18,6 @@
 //
 package gov.nasa.ltl.graph;
 
-import gov.nasa.ltl.graphio.Reader;
-
-import java.io.IOException;
-
 
 /**
  * DOCUMENT ME!
@@ -55,32 +51,6 @@ public class Degeneralize {
     }
 
     return g;
-  }
-
-  public static void main (String[] args) {
-    if (args.length > 1) {
-      System.out.println("usage:");
-      System.out.println("\tjava gov.nasa.ltl.graph.Degeneralize [<filename>]");
-      System.exit (1);
-    }
-
-    Graph<String> g = null;
-
-    try {
-      if (args.length == 0) {
-        g = Reader.read();
-      } else {
-        g = Reader.read(args[0]);
-      }
-    } catch (IOException e) {
-      System.out.println("Can't load the graph.");
-
-      return;
-    }
-
-    g = degeneralize(g);
-
-    g.save();
   }
 
   private static <PropT> void accept (Graph<PropT> g) {

@@ -141,124 +141,48 @@ public class LTL2Buchi {
 		return translate(Parser.parse (formula), rewrite, bisim, fair_sim);
 	}
 
+	/**
+	 * Print the number of vertices and edges in a graph, and what was
+	 * done to obtain it.
+	 * @param <PropT>
+	 * @param gba
+	 * @param op
+	 */
+	private static <PropT> void printStats(Graph<PropT> gba, String op) {
+	  if (!debug)
+	    return;
+      System.out.println("\n***********************");
+      System.out.println("\n" + op);
+      System.out.println("\t" + gba.getNodeCount() + " states "
+              + gba.getEdgeCount() + " transitions");
+	}
+	
 	public static <PropT> Graph<PropT> translate(Formula<PropT> formula,
-	    boolean rewrite, boolean bisim, boolean fair_sim) throws ParseErrorException {
-	    boolean superset = true;
-        boolean scc = true;
-
+	    boolean rewrite, boolean bisim, boolean fair_sim) 
+	    throws ParseErrorException {
         if (rewrite) {
           formula = new Rewriter<PropT> (formula).rewrite();
           System.out.println("Rewritten as       : " + formula);
           System.out.println();
         }
-
 		Graph<PropT> gba = Translator.translate(formula);
-
-		if (debug) {
-			//      gba.save("gba.sm");
-			System.out.println("\n***********************");
-			System.out.println("\nGeneralized buchi automaton generated");
-			System.out.println("\t" + gba.getNodeCount() + " states "
-					+ gba.getEdgeCount() + " transitions");
-
-			//    System.out.println();
-			//	  gba.save(Graph.FSP_FORMAT);
-			//      System.out.println("***********************\n\n");
-		}
-
-		/*     
-		 // Omitted - does not seem to always at this stage, for example !(aU (bUc))
-		 
-		 if (scc)
-		 {
-		 gba = SCCReduction.reduce(gba);
-		 if (debug)
-		 {
-		 // gba.save("scc-gba.sm");
-		 System.out.println("Strongly connected component reduction");
-		 System.out.println("\t" + gba.getNodeCount() + " states " + gba.getEdgeCount() + " transitions");
-		 System.out.println();
-		 gba.save(Graph.FSP_FORMAT);
-		 }
-		 }
-		 */
-		if (superset) {
-			gba = SuperSetReduction.reduce(gba);
-
-			if (debug) {
-				//    	gba.save("ssr-gba.sm");
-				System.out.println("\n***********************");
-				System.out.println("Superset reduction");
-				System.out.println("\t" + gba.getNodeCount() + " states "
-						+ gba.getEdgeCount() + " transitions");
-
-				//      System.out.println();
-				//      gba.save(Graph.FSP_FORMAT);
-			}
-		}
-
+		printStats(gba, "Generalized buchi automaton generated");
+		gba = SuperSetReduction.reduce(gba);
+		printStats(gba, "Superset reduction");
 		Graph<PropT> ba = Degeneralize.degeneralize(gba);
-
-		//    ba.save("ba.sm");
-		if (debug) {
-			System.out.println("\n***********************");
-			System.out.println("Degeneralized buchi automaton generated");
-			System.out.println("\t" + ba.getNodeCount() + " states "
-					+ ba.getEdgeCount() + " transitions");
-
-			//    System.out.println(); 
-			//    ba.save(Graph.FSP_FORMAT);
-		}
-
-		if (scc) {
-			ba = SCCReduction.reduce(ba);
-
-			if (debug) {
-				//    	ba.save("scc-ba.sm");
-				System.out.println("\n***********************");
-				System.out.println("Strongly connected component reduction");
-				System.out.println("\t" + ba.getNodeCount() + " states "
-						+ ba.getEdgeCount() + " transitions");
-
-				//      	System.out.println();
-				//		ba.save(Graph.FSP_FORMAT);
-			}
-		}
-
+		printStats(ba, "Degeneralized buchi automaton generated");
+		ba = SCCReduction.reduce(ba);
+	    printStats(ba, "Degeneralized buchi automaton generated");
 		if (bisim) {
 			ba = Simplify.simplify(ba);
-
-			if (debug) {
-				//     ba.save("bisim-final.sm");
-				System.out.println("\n***********************");
-				System.out.println("Bisimulation applied");
-				System.out.println("\t" + ba.getNodeCount() + " states "
-						+ ba.getEdgeCount() + " transitions");
-
-				//    	System.out.println();
-				//		ba.save(Graph.FSP_FORMAT);
-			}
+		    printStats(ba, "Degeneralized buchi automaton generated");
 		}
-
 		if (fair_sim) {
 			ba = SFSReduction.reduce(ba);
-
-			if (debug) {
-				//    	ba.save("fairSim-final.sm");
-				System.out.println("\n***********************");
-				System.out.println("Fair simulation applied");
-				System.out.println("\t" + ba.getNodeCount() + " states "
-						+ ba.getEdgeCount() + " transitions");
-
-				//        System.out.println();
-				//        ba.save(Graph.FSP_FORMAT);
-			}
+		    printStats(ba, "Degeneralized buchi automaton generated");
 		}
-
 		System.out.println("***********************\n");
-
 		reset_all_static();
-
 		return ba;
 	}
 
@@ -285,114 +209,6 @@ public class LTL2Buchi {
 		return translate(formula, true, true, true);
 	}
 
-	/**
-	 * Commented out on 8/7/03 by Dimitra - apparently redundant now
-	 * since JPF not tied with Bandera any longer
-	 *
-	 *
-	 public static Graph translate(String formula) throws ParseErrorException {
-	 
-	 // To work with Bandera and JPF
-	 
-	 boolean rewrite = true;
-	 boolean superset = true;
-	 boolean scc = true;
-	 boolean bisim = true;
-	 boolean fair_sim = true;
-	 
-	 if (rewrite) {
-	 try {
-	 formula = Rewriter.rewrite(formula);
-	 } catch (ParseErrorException e) {
-	 throw new ParseErrorException(e.getMessage());
-	 }
-	 System.out.println("Rewritten as       : " + formula);
-	 System.out.println();
-	 }
-	 
-	 Graph gba = Translator.translate(formula);
-	 
-	 //#ifdef BANDERA
-	 try {
-	 gba.save(System.getProperty("user.dir") + File.separator + "gba.sm");
-	 } catch (IOException ex) {
-	 }
-	 
-	 //#else BANDERA
-	 
-	 //#endif BANDERA
-	 
-	 if (superset) {
-	 gba = SuperSetReduction.reduce(gba);
-	 
-	 //#ifdef BANDERA
-	 try {
-	 gba.save(
-	 System.getProperty("user.dir") + File.separator + "ssr-gba.sm");
-	 } catch (IOException ex) {
-	 }
-	 //#else BANDERA
-	 
-	 //#endif BANDERA
-	 }
-	 
-	 Graph ba = Degeneralize.degeneralize(gba);
-	 
-	 //#ifdef BANDERA
-	 try {
-	 ba.save(System.getProperty("user.dir") + File.separator + "ba.sm");
-	 } catch (IOException ex) {
-	 }
-	 //#else BANDERA
-	 
-	 //#endif BANDERA
-	 
-	 if (scc) {
-	 ba = SCCReduction.reduce(ba);
-	 
-	 //#ifdef BANDERA
-	 try {
-	 ba.save(System.getProperty("user.dir") + File.separator + "scc-ba.sm");
-	 } catch (IOException ex) {
-	 }
-	 //#else BANDERA
-	 
-	 //#endif BANDERA
-	 }
-	 
-	 if (bisim) {
-	 ba = Simplify.simplify(ba);
-	 //#ifdef BANDERA
-	 try {
-	 ba.save(System.getProperty("user.dir") + File.separator + "bisim.sm");
-	 } catch (IOException ex) {
-	 }
-	 //#else BANDERA
-	 
-	 //#endif BANDERA
-	 }
-	 
-	 if (fair_sim) {
-	 ba = SFSReduction.reduce(ba);
-	 //#ifdef BANDERA
-	 try {
-	 ba.save(
-	 System.getProperty("user.dir") + File.separator + "fairSim-ba.sm");
-	 } catch (IOException ex) {
-	 }
-	 //#else BANDERA
-	 
-	 //#endif BANDERA
-	 
-	 }
-	 
-	 System.out.println("***********************\n");
-	 
-	 reset_all_static();
-	 return ba;
-	 
-	 }
-	 */
 	public static void usage_warning() {
 		System.out.println("\n*******  USAGE *******");
 		System.out.println("java gov.nasa.ltl.trans.LTL2Buchi <options>");

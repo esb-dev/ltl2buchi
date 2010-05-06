@@ -94,18 +94,4 @@ public class Generate {
     //  g.setInit(nodes[0]);
     return g;
   }
-
-  public static void main (String[] args) {
-    Graph<String> g = generate(5);
-
-    g.save(Graph.FSP_FORMAT);
-  }
-
-  /* 
-     public static void main(String[] args) {
-       Graph g = generate(Integer.parseInt(args[0]));
-       
-       g.save();
-     }
-   */
 }

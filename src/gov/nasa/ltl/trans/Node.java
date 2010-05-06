@@ -124,12 +124,7 @@ public class Node<PropT> implements Comparable<Node<PropT>> { // removed (non-co
     Node<PropT> Alternative = this;
 
     while (Alternative != null) {
-      Iterator<Node<PropT>> iterIncom = Alternative.incoming.iterator();
-      Node<PropT> nextNode;
-
-      while (iterIncom.hasNext()) {
-        nextNode = iterIncom.next();
-
+      for (Node<PropT> nextNode: Alternative.incoming) {
         int stateId = nextNode.getId();
 
         if (RTautomaton[stateId] == null) {

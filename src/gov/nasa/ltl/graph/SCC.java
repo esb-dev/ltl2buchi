@@ -18,10 +18,7 @@
 //
 package gov.nasa.ltl.graph;
 
-import gov.nasa.ltl.graphio.Reader;
-
-import java.io.IOException;
-
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -30,63 +27,6 @@ import java.util.List;
  * DOCUMENT ME!
  */
 public class SCC {
-  public static void help () {
-    System.err.println("usage:");
-    System.err.println("\tDegenalize [-join|-degeneralize] [outfile]");
-    System.exit(1);
-  }
-
-  public static void main (String[] args) {
-    String outname = null;
-
-    for (int i = 0, l = args.length; i < l; i++) {
-      if (outname == null) {
-        outname = args[i];
-      } else {
-        help();
-      }
-    }
-
-    try {
-      Graph<String> g = Reader.read("out.sm");
-
-      List<List<Node<String>>>  scc = scc(g);
-
-      for (List<Node<String>> l: scc) {
-        System.out.println("component:");
-        for (Node<String> n: l) {
-          System.out.println("  " + n.getStringAttribute("label"));
-        }
-        System.out.println();
-      }
-
-      if (outname == null) {
-        g.save();
-      } else {
-        g.save(outname);
-      }
-    } catch (IOException e) {
-      e.printStackTrace();
-
-      return;
-    }
-  }
-
-  public static <PropT> void print (List<List<Node<PropT>>> sccs) {
-    System.out.println("Strongly connected components:");
-
-    int cnt = 0;
-
-    for (List<Node<PropT>> scc: sccs) {
-      System.out.println("\tSCC #" + (cnt++));
-
-      for (Node<PropT> n: scc) {
-        System.out.println("\t\t" + n.getId() + " - " + 
-                           n.getStringAttribute("label"));
-      }
-    }
-  }
-
   @SuppressWarnings ("unchecked")
   public static <PropT> List<List<Node<PropT>>> scc (Graph<PropT> g) {
     Node<PropT> init = g.getInit();
@@ -100,7 +40,7 @@ public class SCC {
     SCCState<PropT> s = new SCCState<PropT>();
     visit(init, s);
 
-    final List<Node<PropT>>[] scc = (List<Node<PropT>>[])new List[s.SCC];
+    final List<Node<PropT>>[] scc = new List[s.SCC];
 
     for (int i = 0; i < s.SCC; i++) {
       scc[i] = new LinkedList<Node<PropT>>();
@@ -116,14 +56,7 @@ public class SCC {
         n.setBooleanAttribute("_scc", false);
       }
     });
-
-    List<List<Node<PropT>>> list = new LinkedList<List<Node<PropT>>>();
-
-    for (int i = 0; i < s.SCC; i++) {
-      list.add(scc[i]);
-    }
-
-    return list;
+    return Arrays.asList (scc);
   }
 
   private static <PropT> void visit (Node<PropT> p, SCCState<PropT> s) {

@@ -18,11 +18,6 @@
 //
 package gov.nasa.ltl.graph;
 
-import gov.nasa.ltl.graphio.Reader;
-
-import java.io.*;
-
-import java.util.BitSet;
 import java.util.List;
 
 
@@ -30,39 +25,15 @@ import java.util.List;
  * DOCUMENT ME!
  */
 public class SCCReduction {
-  public static void main (String[] args) {
-    if (args.length > 1) {
-      System.out.println("usage:");
-      System.out.println("\tjava gov.nasa.ltl.graph.SCCReduction [<filename>]");
-
-      return;
-    }
-
-    Graph<String> g = null;
-
-    try {
-      if (args.length == 0) {
-        g = Reader.read();
-      } else {
-        g = Reader.read(args[0]);
-      }
-    } catch (IOException e) {
-      System.out.println("Can't load the graph.");
-
-      return;
-    }
-
-    g = reduce(g);
-
-    g.save();
-  }
-
   public static <PropT> Graph<PropT> reduce (Graph<PropT> g) {
     boolean changed;
-    /* not needed? - pcd
+    /* not needed? - pcd */
     String  type = g.getStringAttribute("type");
     String  ac = g.getStringAttribute("ac");
-    boolean acNodes = ac.equals("nodes");*/
+    assert ac.equals ("nodes") || ac.equals ("edges") :
+      "invalid accepting type: " + ac;
+    assert type.equals ("ba") || type.equals ("gba") :
+      "invalid graph type: " + type;
 
     for (List<Node<PropT>> l: SCC.scc (g)) {
       clearExternalEdges(l, g);
@@ -92,71 +63,60 @@ public class SCCReduction {
     return g;
   }
 
+  /**
+   * Check whether scc contains at least one node (if the graph is
+   * node-accepting)/edge (otherwise) from every accepting set.
+   * @param <PropT>
+   * @param scc
+   * @param g
+   * @return
+   */
   private static <PropT> boolean isAccepting (List<Node<PropT>> scc, Graph<PropT> g) {
     String type = g.getStringAttribute("type");
     String ac = g.getStringAttribute("ac");
+    int    nsets = g.getIntAttribute("nsets");
+    boolean found;
 
     if (type.equals("ba")) {
-      if (ac.equals("nodes")) {
-        for (Node<PropT> n: scc) {
-          if (n.getBooleanAttribute("accepting")) {
+      for (Node<PropT> n: scc)
+        if (ac.equals("nodes")) {
+          if (n.getBooleanAttribute("accepting"))
             return true;
-          }
-        }
-
-        return false;
-      } else if (ac.equals("edges")) {
-        for (Node<PropT> n: scc) {
-          for (Edge<PropT> e: n.getOutgoingEdges ()) {
-            if (e.getBooleanAttribute("accepting")) {
+        } else // edges
+          for (Edge<PropT> e: n.getOutgoingEdges ())
+            if (e.getBooleanAttribute("accepting"))
               return true;
-            }
-          }
-        }
-
-        return false;
-      } else {
-        throw new RuntimeException("invalid accepting type: " + ac);
-      }
-    } else if (type.equals("gba")) {
-      int    nsets = g.getIntAttribute("nsets");
-      BitSet found = new BitSet(nsets);
-      int    nsccs = 0;
-
-      if (ac.equals("nodes")) {
-        for (Node<PropT> n: scc) {
-          for (int j = 0; j < nsets; j++) {
+      return false;
+    } else { // gba
+      for (int j = 0; j < nsets; j++) {
+        found = false;
+        nodes: for (Node<PropT> n: scc) {
+          if (ac.equals("nodes")) {
             if (n.getBooleanAttribute("acc" + j)) {
-              if (!found.get(j)) {
-                found.set(j);
-                nsccs++;
+              found = true;
+              break nodes;
+            }
+          } else // edges
+            for (Edge<PropT> e: n.getOutgoingEdges ()) {
+              if (e.getBooleanAttribute("acc" + j)) {
+                found = true;
+                break nodes;
               }
             }
-          }
         }
-      } else if (ac.equals("edges")) {
-        for (Node<PropT> n: scc) {
-          for (Edge<PropT> e: n.getOutgoingEdges ()) {
-            for (int k = 0; k < nsets; k++) {
-              if (e.getBooleanAttribute("acc" + k)) {
-                if (!found.get(k)) {
-                  found.set(k);
-                  nsccs++;
-                }
-              }
-            }
-          }
-        }
-      } else {
-        throw new RuntimeException("invalid accepting type: " + ac);
+        if (!found)
+          return false;
       }
-
-      return nsccs == nsets;
-    } else {
-      throw new RuntimeException("invalid graph type: " + type);
+      return true;
     }
   }
 
+  /**
+   * Check whether scc has no edge into a node outside scc.
+   * @param <PropT>
+   * @param scc
+   * @return
+   */
   private static <PropT> boolean isTerminal (List<Node<PropT>> scc) {
     for (Node<PropT> n: scc) {
       for (Edge<PropT> e: n.getOutgoingEdges ()) {
@@ -169,6 +129,12 @@ public class SCCReduction {
     return true;
   }
 
+  /**
+   * Check whether scc is a single node without loops.
+   * @param <PropT>
+   * @param scc
+   * @return
+   */
   private static <PropT> boolean isTransient (List<Node<PropT>> scc) {
     if (scc.size() != 1) {
       return false;
@@ -185,138 +151,93 @@ public class SCCReduction {
     return true;
   }
 
+  /**
+   * Check whether any node (if the graph is node-accepting)
+   * or edge (otherwise) in/from scc belongs to any accepting set.
+   * @param <PropT>
+   * @param scc
+   * @param g
+   * @return
+   */
   private static <PropT> boolean anyAcceptingState (List<Node<PropT>> scc, Graph<PropT> g) {
     String type = g.getStringAttribute("type");
     String ac = g.getStringAttribute("ac");
+    int nsets = g.getIntAttribute("nsets");
 
-    if (type.equals("ba")) {
-      if (ac.equals("nodes")) {
-        for (Node<PropT> n: scc) {
-          if (n.getBooleanAttribute("accepting")) {
+    for (Node<PropT> n: scc)
+      if (type.equals("ba"))
+        if (ac.equals ("nodes")) {
+          if (n.getBooleanAttribute ("accepting"))
             return true;
-          }
-        }
-      } else if (ac.equals("edges")) {
-        for (Node<PropT> n: scc) {
-          for (Edge<PropT> e: n.getOutgoingEdges ()) {
-            if (e.getBooleanAttribute("accepting")) {
+        } else // edges
+          for (Edge<PropT> e: n.getOutgoingEdges ())
+            if (e.getBooleanAttribute("accepting"))
               return true;
-            }
-          }
-        }
-      } else {
-        throw new RuntimeException("invalid accepting type: " + ac);
-      }
-    } else if (type.equals("gba")) {
-      int nsets = g.getIntAttribute("nsets");
-
-      if (ac.equals("nodes")) {
-        for (Node<PropT> n: scc) {
-          for (int j = 0; j < nsets; j++) {
-            if (n.getBooleanAttribute("acc" + j)) {
+      else // gba
+        for (int k = 0; k < nsets; k++)
+          if (ac.equals ("nodes")) { 
+            if (n.getBooleanAttribute ("acc" + k))
               return true;
-            }
-          }
-        }
-      } else if (ac.equals("edges")) {
-        for (Node<PropT> n: scc) {
-          for (Edge<PropT> e: n.getOutgoingEdges ()) {
-            for (int k = 0; k < nsets; k++) {
-              if (e.getBooleanAttribute("acc" + k)) { // TODO: was Iterator j; verify…
+          } else // edges
+            for (Edge<PropT> f: n.getOutgoingEdges ())
+              if (f.getBooleanAttribute("acc" + k))
                 return true;
-              }
-            }
-          }
-        }
-      } else {
-        throw new RuntimeException("invalid accepting type: " + ac);
-      }
-    } else {
-      throw new RuntimeException("invalid graph type: " + type);
-    }
-
     return false;
   }
 
+  /**
+   * If the graph is node-accepting, remove every node of scc from
+   * every accepting set; else, remove every edge with source in
+   * scc from every accepting set.
+   * @param <PropT>
+   * @param scc
+   * @param g
+   */
   private static <PropT> void clearAccepting (List<Node<PropT>> scc, Graph<PropT> g) {
     String type = g.getStringAttribute("type");
     String ac = g.getStringAttribute("ac");
+    int nsets = g.getIntAttribute("nsets");
 
-    if (type.equals("ba")) {
-      if (ac.equals("nodes")) {
-        for (Node<PropT> n: scc) {
+    if (type.equals("ba"))
+      if (ac.equals("nodes"))
+        for (Node<PropT> n: scc)
           n.setBooleanAttribute("accepting", false);
-        }
-      } else if (ac.equals("edges")) {
-        for (Node<PropT> n: scc) {
-          for (Edge<PropT> e: n.getOutgoingEdges ()) {
+      else // edges
+        for (Node<PropT> n: scc)
+          for (Edge<PropT> e: n.getOutgoingEdges ())
             e.setBooleanAttribute("accepting", false);
-          }
-        }
-      } else {
-        throw new RuntimeException("invalid accepting type: " + ac);
-      }
-    } else if (type.equals("gba")) {
-      int nsets = g.getIntAttribute("nsets");
-
-      if (ac.equals("nodes")) {
-        for (Node<PropT> n: scc) {
-          for (int j = 0; j < nsets; j++) {
+    else // gba
+      for (int j = 0; j < nsets; j++)
+        if (ac.equals("nodes"))
+          for (Node<PropT> n: scc)
             n.setBooleanAttribute("acc" + j, false);
-          }
-        }
-      } else if (ac.equals("edges")) {
-        for (Node<PropT> n: scc) {
-          for (Edge<PropT> e: n.getOutgoingEdges ()) {
-            for (int k = 0; k < nsets; k++) {
-              e.setBooleanAttribute("acc" + k, false);
-            }
-          }
-        }
-      } else {
-        throw new RuntimeException("invalid accepting type: " + ac);
-      }
-    } else {
-      throw new RuntimeException("invalid graph type: " + type);
-    }
+        else // edges
+          for (Node<PropT> n: scc)
+            for (Edge<PropT> e: n.getOutgoingEdges ())
+              e.setBooleanAttribute("acc" + j, false);
   }
 
+  /**
+   * If the graph is edge-accepting, remove every edge from scc
+   * to a node outside scc from every accepting set.
+   * @param <PropT>
+   * @param scc
+   * @param g
+   */
   private static <PropT> void clearExternalEdges (List<Node<PropT>> scc, Graph<PropT> g) {
+    int nsets = g.getIntAttribute("nsets");
     String type = g.getStringAttribute("type");
     String ac = g.getStringAttribute("ac");
 
-    if (type.equals("ba")) {
-      if (ac.equals("nodes")) {
-      } else if (ac.equals("edges")) {
-        for (Node<PropT> n: scc) {
-          for (Edge<PropT> e: n.getOutgoingEdges ()) {
-            if (!scc.contains(e.getNext())) {
-              e.setBooleanAttribute("accepting", false);
-            }
-          }
-        }
-      } else {
-        throw new RuntimeException("invalid accepting type: " + ac);
-      }
-    } else if (type.equals("gba")) {
-      int nsets = g.getIntAttribute("nsets");
-
-      if (ac.equals("nodes")) {
-      } else if (ac.equals("edges")) {
-        for (Node<PropT> n: scc) {
-          for (Edge<PropT> e: n.getOutgoingEdges ()) {
-            if (!scc.contains(e.getNext())) {
-              for (int k = 0; k < nsets; k++) {
-                e.setBooleanAttribute("acc" + k, false);
-              }
-            }
-          }
-        }
-      } else {
-        throw new RuntimeException("invalid accepting type: " + ac);
-      }
-    } else {
-      throw new RuntimeException("invalid graph type: " + type);
-    }
+    if (ac.equals ("nodes"))
+      return;
+    for (Node<PropT> n: scc)
+      for (Edge<PropT> e: n.getOutgoingEdges ())
+        if (!scc.contains(e.getNext()))
+          if (type.equals ("gba"))
+            for (int k = 0; k < nsets; k++)
+              e.setBooleanAttribute("acc" + k, false);
+          else // ba
+            e.setBooleanAttribute ("accepting", false);
   }
 }

@@ -18,10 +18,6 @@
 //
 package gov.nasa.ltl.graph;
 
-import gov.nasa.ltl.graphio.Reader;
-
-import java.io.*;
-
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -33,33 +29,6 @@ import java.util.Vector;
  * DOCUMENT ME!
  */
 public class SFSReduction {
-  public static void main (String[] args) {
-    if (args.length > 1) {
-      System.out.println("usage:");
-      System.out.println("\tjava gov.nasa.ltl.graph.SFSReduction [<filename>]");
-
-      return;
-    }
-
-    Graph<String> g = null;
-
-    try {
-      if (args.length == 0) {
-        g = Reader.read();
-      } else {
-        g = Reader.read(args[0]);
-      }
-    } catch (IOException e) {
-      System.out.println("Can't load the graph.");
-
-      return;
-    }
-
-    Graph<String> reduced = reduce(g);
-
-    reduced.save();
-  }
-
   @SuppressWarnings ("unchecked")
   public static <PropT> Graph<PropT> reduce (Graph<PropT> g) {
     // debugged by Dimitra 3/4/02 - added |PO| information so that main while
@@ -143,12 +112,8 @@ public class SFSReduction {
       // Convert the set into a linked list so that rank of object is known
       // originally used set to avoid duplicates 
       // rank will just be the position of the object in the list
-      LinkedList<ColorPair<PropT>> ordered = new LinkedList<ColorPair<PropT>>();
-
-      for (ColorPair<PropT> currPair: newColorSet) {
-        ordered.add(currPair);
-      }
-
+      LinkedList<ColorPair<PropT>> ordered =
+        new LinkedList<ColorPair<PropT>> (newColorSet);
       // Renaming color set
       for (Pair<ColorPair<PropT>> cPair: newColorList) {
         ColorPair<PropT> currPair = cPair.getElement();
@@ -352,10 +317,8 @@ public class SFSReduction {
         }
       }
 
-      if (work.remove(0) != currNode) {
-        System.out.println("ERROR"); // should probably throw exception
-                                     // TODO: …make it so?
-      }
+      Node<PropT> removed = work.remove (0);
+      assert removed == currNode : "ERROR";
     }
 
     if (g.getNodes() != null) {

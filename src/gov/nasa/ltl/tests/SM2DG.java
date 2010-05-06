@@ -16,11 +16,14 @@
 // THE SUBJECT SOFTWARE WILL BE ERROR FREE, OR ANY WARRANTY THAT
 // DOCUMENTATION, IF PROVIDED, WILL CONFORM TO THE SUBJECT SOFTWARE.
 //
-package gov.nasa.ltl.graph;
+package gov.nasa.ltl.tests;
 
+import gov.nasa.ltl.graph.Graph;
 import gov.nasa.ltl.graphio.Reader;
+import gov.nasa.ltl.graphio.Writer;
 
 import java.io.IOException;
+import java.io.PrintStream;
 
 
 /**
@@ -28,30 +31,28 @@ import java.io.IOException;
  */
 public class SM2DG {
   public static void main (String[] args) {
+    Writer<String> w = Writer.getWriter (Writer.Format.FSP, System.out);
+
     try {
       Graph<String> g = null;
 
       switch (args.length) {
       case 0:
         g = Reader.read("out.sm");
-        g.save(Graph.FSP_FORMAT);
-
+        w.write (g);
         break;
-
       case 1:
         g = Reader.read(args[0]);
-        g.save(Graph.FSP_FORMAT);
-
+        w.write (g);
         break;
-
       case 2:
         g = Reader.read(args[0]);
-        g.save(args[1], Graph.FSP_FORMAT);
-
+        w = Writer.getWriter (Writer.Format.FSP,
+            new PrintStream (args[1]));
+        w.write (g);
         break;
-
       default:
-        System.err.println("usage:\nSM2DG [<infile> [<outfile>]]\n\n");
+        System.err.println("usage:\ngov.nasa.ltl.tests.SM2DG [<infile> [<outfile>]]\n\n");
         System.exit(1);
       }
     } catch (IOException e) {

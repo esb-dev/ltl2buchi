@@ -16,8 +16,12 @@
 // THE SUBJECT SOFTWARE WILL BE ERROR FREE, OR ANY WARRANTY THAT
 // DOCUMENTATION, IF PROVIDED, WILL CONFORM TO THE SUBJECT SOFTWARE.
 //
-package gov.nasa.ltl.graph;
+package gov.nasa.ltl.tests;
 
+import gov.nasa.ltl.graph.Edge;
+import gov.nasa.ltl.graph.EmptyVisitor;
+import gov.nasa.ltl.graph.Graph;
+import gov.nasa.ltl.graph.Node;
 import gov.nasa.ltl.graphio.Reader;
 
 import java.io.IOException;

@@ -19,44 +19,19 @@
 package gov.nasa.ltl.trans;
 //Written by Dimitra Giannakopoulou, 19 Jan 2001
 
+import java.util.LinkedList;
+
 import gov.nasa.ltl.graph.*;
 
 
 /**
  * DOCUMENT ME!
  */
-class LinkNode<PropT> {
-  private Node<PropT>     node;
-  private LinkNode<PropT> next;
-
-  public LinkNode (Node<PropT> nd, LinkNode<PropT> nxt) {
-    node = nd;
-    next = nxt;
-  }
-
-  public LinkNode<PropT> getNext () {
-    return next;
-  }
-
-  public Node<PropT> getNode () {
-    return node;
-  }
-
-  public void LinkWith (LinkNode<PropT> lk) {
-    next = lk;
-  }
-}
-
-/**
- * DOCUMENT ME!
- */
 class Automaton<PropT> {
-  private LinkNode<PropT> head;
-  private LinkNode<PropT> tail;
+  private LinkedList<Node<PropT>> nodeList = new LinkedList<Node<PropT>>();
   private Node<PropT>[]   equivalence_classes; // array of representatives of equivalent states
 
   public Automaton () {
-    head = tail = null;
     equivalence_classes = null;
   }
 
@@ -131,16 +106,7 @@ class Automaton<PropT> {
   }
 
   public void add (Node<PropT> nd) {
-    LinkNode<PropT> newNode = new LinkNode<PropT>(nd, null);
-
-    if (head == null) // set is currently empty
-    {
-      head = tail = newNode;
-    } else // put element at end of list
-    {
-      tail.LinkWith(newNode);
-      tail = newNode;
-    }
+    nodeList.add (nd);
   }
 
   public Node<PropT> alreadyThere (Node<PropT> nd) {
@@ -148,22 +114,15 @@ class Automaton<PropT> {
        accepting conditions are the same. For LTL2AUT, old fields
        also have to be the same
      */
-    LinkNode<PropT> nextNd = head;
-
-    while (nextNd != null) {
-      Node<PropT> currState = nextNd.getNode();
-
+    for (Node<PropT> currState: nodeList) {
       if (currState.getField_next().equals(nd.getField_next()) && 
               currState.compare_accepting(nd) && 
               (Translator.get_algorithm() == Translator.LTL2BUCHI || 
                 (currState.getField_old().equals(nd.getField_old())))) {
         //System.out.println("Match found");
         return currState;
-      } else {
-        nextNd = nextNd.getNext();
       }
     }
-
     //System.out.println("No match found for node " + nd.getNodeId());
     return null;
   }
@@ -188,10 +147,8 @@ class Automaton<PropT> {
       }
     }
 
-    if (index == Pool.assign()) {
-      System.out.println(
-            "ERROR - size of equivalence classes array was incorrect");
-    }
+    assert index < Pool.assign() :
+      "ERROR - size of equivalence classes array was incorrect";
 
     equivalence_classes[index] = nd;
 
@@ -208,20 +165,10 @@ class Automaton<PropT> {
     State<PropT>[] RTstruct = (State<PropT>[])new State[automatonSize];
     equivalence_classes = (Node<PropT>[])new Node[automatonSize];
 
-    if (head == null) {
-      return RTstruct;
-    }
-
-    LinkNode<PropT> nextNd = head;
-    Node<PropT>     current;
-
-    while (nextNd != null) {
-      current = nextNd.getNode();
+    for (Node<PropT> current: nodeList) {
       current.set_equivalenceId(index_equivalence(current));
-      nextNd.getNode().RTstructure(RTstruct);
-      nextNd = nextNd.getNext();
+      current.RTstructure(RTstruct);
     }
-
     return RTstruct;
   }
 }

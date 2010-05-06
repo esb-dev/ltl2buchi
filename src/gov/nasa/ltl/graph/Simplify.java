@@ -18,114 +18,54 @@
 //
 package gov.nasa.ltl.graph;
 
-import gov.nasa.ltl.graphio.Reader;
-
-import java.io.IOException;
-
-import java.util.Iterator;
-
 
 /**
  * DOCUMENT ME!
  */
 public class Simplify {
-  public static void main (String[] args) {
-    if (args.length > 1) {
-      System.out.println("usage:");
-      System.out.println("\tjava gov.nasa.ltl.graph.Simplify [<filename>]");
-
-      return;
-    }
-
-    Graph<String> g = null;
-
-    try {
-      if (args.length == 0) {
-        g = Reader.read();
-      } else {
-        g = Reader.read(args[0]);
-      }
-    } catch (IOException e) {
-      System.out.println("Can't load the graph.");
-
-      return;
-    }
-
-    g = simplify(g);
-
-    g.save();
-  }
-
   public static <PropT> Graph<PropT> simplify (Graph<PropT> g) {
     boolean simplified;
 
     do {
       simplified = false;
-
       for (Node<PropT> n0: g.getNodes ()) {
-        for (Iterator<Node<PropT>> j = g.getNodes().iterator(); j.hasNext();) {
-          Node<PropT> n1 = j.next();
-
-          if (n1.getId() <= n0.getId()) {
+        for (Node<PropT> n1: g.getNodes ()) { // getNodes() copies list
+          if (n1.getId() <= n0.getId())
             continue;
-          }
-
-          if (n1.getBooleanAttribute("accepting") != n0.getBooleanAttribute(
-                                                           "accepting")) {
+          if (n1.getBooleanAttribute("accepting") !=
+              n0.getBooleanAttribute("accepting"))
             continue;
-          }
-
-          boolean equivalent = true;
-
-          for (Edge<PropT> e0: n0.getOutgoingEdges ()) {
-            if (!equivalent)
-              break;
-            equivalent = false;
-            for (Edge<PropT> e1: n1.getOutgoingEdges ()) {
-              if ((e0.getNext() == e1.getNext()) || 
-                      ((e0.getNext() == n0 || e0.getNext() == n1) && 
-                        (e1.getNext() == n0 || e1.getNext() == n1))) {
-                if (e0.getGuard().equals(e1.getGuard())) {
-                  if (e0.getAction().equals(e1.getAction())) {
-                    equivalent = true;
-                    break;
-                  }
-                }
-              }
-            }
-          }
-
-          for (Edge<PropT> e1: n1.getOutgoingEdges ()) {
-            if (!equivalent)
-              break;
-            equivalent = false;
-            for (Edge<PropT> e0: n0.getOutgoingEdges ()) {
-              if ((e0.getNext() == e1.getNext()) || 
-                      ((e0.getNext() == n0 || e0.getNext() == n1) && 
-                        (e1.getNext() == n0 || e1.getNext() == n1))) {
-                if (e0.getGuard().equals(e1.getGuard())) {
-                  if (e0.getAction().equals(e1.getAction())) {
-                    equivalent = true;
-                    break;
-                  }
-                }
-              }
-            }
-          }
-
-          if (equivalent) {
+          if (equivalentCheck (n0, n1) && equivalentCheck (n1, n0)) {
             for (Edge<PropT> e: n1.getIncomingEdges ())
               new Edge<PropT>(e.getSource(), n0, e.getGuard(), e.getAction(), 
                        e.getAttributes());
-
             n1.remove();
-
             simplified = true;
           }
         }
       }
     } while (simplified);
-
     return g;
+  }
+  
+  private static <PropT> boolean equivalentCheck (Node<PropT> n0,
+                                                  Node<PropT> n1) {
+    boolean equivalent = true;
+
+    for (Edge<PropT> e0: n0.getOutgoingEdges ()) {
+      if (!equivalent)
+        return false;
+      equivalent = false;
+      for (Edge<PropT> e1: n1.getOutgoingEdges ())
+        if ((e0.getNext() == e1.getNext()) || 
+                ((e0.getNext() == n0 || e0.getNext() == n1) && 
+                  (e1.getNext() == n0 || e1.getNext() == n1)))
+          if (e0.getGuard().equals(e1.getGuard()) &&
+              e0.getAction().equals(e1.getAction())) {
+            equivalent = true;
+            break;
+          }
+    }
+    return equivalent;
   }
 }

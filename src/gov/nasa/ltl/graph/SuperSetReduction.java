@@ -18,103 +18,101 @@
 //
 package gov.nasa.ltl.graph;
 
-import gov.nasa.ltl.graphio.Reader;
-
-import java.io.*;
-
 /**
  * DOCUMENT ME!
  */
 public class SuperSetReduction {
-  public static void main (String[] args) {
-    if (args.length > 1) {
-      System.out.println("usage:");
-      System.out.println(
-            "\tjava gov.nasa.ltl.graph.SuperSetReduction [<filename>]");
-
-      return;
-    }
-
-    Graph<String> g = null;
-
-    try {
-      if (args.length == 0) {
-        g = Reader.read();
-      } else {
-        g = Reader.read(args[0]);
-      }
-    } catch (IOException e) {
-      System.out.println("Can't load the graph.");
-
-      return;
-    }
-
-    g = reduce(g);
-
-    g.save();
-  }
-
   @SuppressWarnings ("unchecked")
   public static <PropT> Graph<PropT> reduce (Graph<PropT> g) {
     final int nsets = g.getIntAttribute("nsets");
     String    type = g.getStringAttribute("type");
     String    ac = g.getStringAttribute("ac");
+    int nsomething;
+    Edge<PropT>[] edges = null;
+    boolean[][] asets;
 
     if (!type.equals("gba")) {
       throw new RuntimeException("invalid graph type: " + type);
     }
-
+    assert ac.equals ("nodes") || ac.equals ("edges") :
+      "invalid accepting type: " + ac;
     if (ac.equals("nodes")) {
       final int         nnodes = g.getNodeCount();
-
-      final boolean[][] asets = new boolean[nsets][nnodes];
-
+      nsomething = nnodes;
+      final boolean[][] asets_ = new boolean[nsets][nnodes];
+      asets = asets_;
       g.forAllNodes(new EmptyVisitor<PropT>() {
         public void visitNode (Node<PropT> n) {
           for (int i = 0; i < nsets; i++) {
             String acc = "acc" + i;
 
             if (n.getBooleanAttribute(acc)) {
-              asets[i][n.getId()] = true;
+              asets_[i][n.getId()] = true;
               n.setBooleanAttribute(acc, false);
             }
           }
         }
       });
+    } else { // edges
+      final int         nedges = g.getEdgeCount();
+      nsomething = nedges;
+      final boolean[][] asets_ = new boolean[nsets][nedges];
+      asets = asets_;
+      final Edge<PropT>[] edges_ = new Edge[nedges];
+      edges = edges_;
+      g.forAllEdges(new EmptyVisitor<PropT>(new Integer(0)) {
+        public void visitEdge (Edge<PropT> e) {
+          int id = ((Integer) arg).intValue();
+          arg = new Integer(id + 1);
 
-      boolean[] remove = new boolean[nsets];
+          edges_[id] = e;
 
-      for (int i = 0; i < nsets; i++) {
-        for (int j = 0; (j < nsets) && !remove[i]; j++) {
-          if ((i != j) && !remove[j]) {
-            if (included(asets[j], asets[i])) {
-              remove[i] = true;
+          for (int i = 0; i < nsets; i++) {
+            String acc = "acc" + i;
+
+            if (e.getBooleanAttribute(acc)) {
+              asets_[i][id] = true;
+              e.setBooleanAttribute(acc, false);
             }
           }
         }
-      }
+      });
+    }
 
-      int n_nsets = 0;
+    boolean[] remove = new boolean[nsets];
 
-      for (int i = 0; i < nsets; i++) {
-        if (!remove[i]) {
-          n_nsets++;
+    for (int i = 0; i < nsets; i++) {
+      for (int j = 0; (j < nsets) && !remove[i]; j++) {
+        if ((i != j) && !remove[j]) {
+          if (included(asets[j], asets[i])) {
+            remove[i] = true;
+          }
         }
       }
+    }
 
-      boolean[][] n_asets = new boolean[n_nsets][nnodes];
+    int n_nsets = 0;
 
-      n_nsets = 0;
-
-      for (int i = 0; i < nsets; i++) {
-        if (!remove[i]) {
-          n_asets[n_nsets++] = asets[i];
-        }
+    for (int i = 0; i < nsets; i++) {
+      if (!remove[i]) {
+        n_nsets++;
       }
+    }
 
-      g.setIntAttribute("nsets", n_nsets);
+    boolean[][] n_asets = new boolean[n_nsets][nsomething];
 
-      for (int i = 0; i < nnodes; i++) {
+    n_nsets = 0;
+
+    for (int i = 0; i < nsets; i++) {
+      if (!remove[i]) {
+        n_asets[n_nsets++] = asets[i];
+      }
+    }
+
+    g.setIntAttribute("nsets", n_nsets);
+
+    if (ac.equals ("nodes")) {
+      for (int i = 0; i < nsomething; i++) {
         Node<PropT> n = g.getNode(i);
 
         for (int j = 0; j < n_nsets; j++) {
@@ -123,65 +121,8 @@ public class SuperSetReduction {
           }
         }
       }
-
-      return g;
-    } else if (ac.equals("edges")) {
-      final int         nedges = g.getEdgeCount();
-
-      final boolean[][] asets = new boolean[nsets][nedges];
-      final Edge<PropT>[] edges = new Edge[nedges];
-
-      g.forAllEdges(new EmptyVisitor<PropT>(new Integer(0)) {
-        public void visitEdge (Edge<PropT> e) {
-          int id = ((Integer) arg).intValue();
-          arg = new Integer(id + 1);
-
-          edges[id] = e;
-
-          for (int i = 0; i < nsets; i++) {
-            String acc = "acc" + i;
-
-            if (e.getBooleanAttribute(acc)) {
-              asets[i][id] = true;
-              e.setBooleanAttribute(acc, false);
-            }
-          }
-        }
-      });
-
-      boolean[] remove = new boolean[nsets];
-
-      for (int i = 0; i < nsets; i++) {
-        for (int j = 0; (j < nsets) && !remove[i]; j++) {
-          if ((i != j) && !remove[j]) {
-            if (included(asets[j], asets[i])) {
-              remove[i] = true;
-            }
-          }
-        }
-      }
-
-      int n_nsets = 0;
-
-      for (int i = 0; i < nsets; i++) {
-        if (!remove[i]) {
-          n_nsets++;
-        }
-      }
-
-      boolean[][] n_asets = new boolean[n_nsets][nedges];
-
-      n_nsets = 0;
-
-      for (int i = 0; i < nsets; i++) {
-        if (!remove[i]) {
-          n_asets[n_nsets++] = asets[i];
-        }
-      }
-
-      g.setIntAttribute("nsets", n_nsets);
-
-      for (int i = 0; i < nedges; i++) {
+    } else { // edges
+      for (int i = 0; i < nsomething; i++) {
         Edge<PropT> e = edges[i];
 
         for (int j = 0; j < n_nsets; j++) {
@@ -190,11 +131,8 @@ public class SuperSetReduction {
           }
         }
       }
-
-      return g;
-    } else {
-      throw new RuntimeException("invalid accepting type: " + ac);
     }
+    return g;
   }
 
   private static boolean included (boolean[] a, boolean[] b) {
