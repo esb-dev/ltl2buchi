@@ -72,14 +72,14 @@ public class SCCReduction {
    * @return
    */
   private static <PropT> boolean isAccepting (List<Node<PropT>> scc, Graph<PropT> g) {
-    String type = g.getStringAttribute("type");
-    String ac = g.getStringAttribute("ac");
+    boolean gba = g.getStringAttribute ("type").equals ("gba"),
+            nac = g.getStringAttribute ("ac").equals ("nodes");
     int    nsets = g.getIntAttribute("nsets");
     boolean found;
 
-    if (type.equals("ba")) {
+    if (!gba) {
       for (Node<PropT> n: scc)
-        if (ac.equals("nodes")) {
+        if (nac) {
           if (n.getBooleanAttribute("accepting"))
             return true;
         } else // edges
@@ -91,7 +91,7 @@ public class SCCReduction {
       for (int j = 0; j < nsets; j++) {
         found = false;
         nodes: for (Node<PropT> n: scc) {
-          if (ac.equals("nodes")) {
+          if (nac) {
             if (n.getBooleanAttribute("acc" + j)) {
               found = true;
               break nodes;
@@ -160,13 +160,13 @@ public class SCCReduction {
    * @return
    */
   private static <PropT> boolean anyAcceptingState (List<Node<PropT>> scc, Graph<PropT> g) {
-    String type = g.getStringAttribute("type");
-    String ac = g.getStringAttribute("ac");
+    boolean gba = g.getStringAttribute ("type").equals ("gba"),
+            nac = g.getStringAttribute ("ac").equals ("nodes");
     int nsets = g.getIntAttribute("nsets");
 
     for (Node<PropT> n: scc)
-      if (type.equals("ba"))
-        if (ac.equals ("nodes")) {
+      if (!gba)
+        if (nac) {
           if (n.getBooleanAttribute ("accepting"))
             return true;
         } else // edges
@@ -175,7 +175,7 @@ public class SCCReduction {
               return true;
       else // gba
         for (int k = 0; k < nsets; k++)
-          if (ac.equals ("nodes")) { 
+          if (nac) { 
             if (n.getBooleanAttribute ("acc" + k))
               return true;
           } else // edges
@@ -194,12 +194,12 @@ public class SCCReduction {
    * @param g
    */
   private static <PropT> void clearAccepting (List<Node<PropT>> scc, Graph<PropT> g) {
-    String type = g.getStringAttribute("type");
-    String ac = g.getStringAttribute("ac");
+    boolean gba = g.getStringAttribute ("type").equals ("gba"),
+            nac = g.getStringAttribute ("ac").equals ("nodes");
     int nsets = g.getIntAttribute("nsets");
 
-    if (type.equals("ba"))
-      if (ac.equals("nodes"))
+    if (!gba)
+      if (nac)
         for (Node<PropT> n: scc)
           n.setBooleanAttribute("accepting", false);
       else // edges
@@ -208,7 +208,7 @@ public class SCCReduction {
             e.setBooleanAttribute("accepting", false);
     else // gba
       for (int j = 0; j < nsets; j++)
-        if (ac.equals("nodes"))
+        if (nac)
           for (Node<PropT> n: scc)
             n.setBooleanAttribute("acc" + j, false);
         else // edges
@@ -226,15 +226,15 @@ public class SCCReduction {
    */
   private static <PropT> void clearExternalEdges (List<Node<PropT>> scc, Graph<PropT> g) {
     int nsets = g.getIntAttribute("nsets");
-    String type = g.getStringAttribute("type");
-    String ac = g.getStringAttribute("ac");
+    boolean gba = g.getStringAttribute ("type").equals ("gba"),
+            nac = g.getStringAttribute ("ac").equals ("nodes");
 
-    if (ac.equals ("nodes"))
+    if (nac)
       return;
     for (Node<PropT> n: scc)
       for (Edge<PropT> e: n.getOutgoingEdges ())
         if (!scc.contains(e.getNext()))
-          if (type.equals ("gba"))
+          if (gba)
             for (int k = 0; k < nsets; k++)
               e.setBooleanAttribute("acc" + k, false);
           else // ba
