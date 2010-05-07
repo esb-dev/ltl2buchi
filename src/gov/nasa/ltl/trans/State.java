@@ -83,13 +83,8 @@ public class State<PropT> {//implements Comparable<State> { // removed (non-conf
 
   public void SMoutput (gov.nasa.ltl.graph.Node<PropT>[] nodes, 
                         gov.nasa.ltl.graph.Node<PropT> node) {
-    ListIterator<Transition<PropT>> iter = transitions.listIterator(0);
-    Transition<PropT> nextTrans;
-
-    while (iter.hasNext()) {
-      nextTrans = iter.next();
-      nextTrans.SMoutput(nodes, node);
-    }
+    for (Transition<PropT> trans: transitions)
+      trans.SMoutput(nodes, node);
   }
 
   public boolean accepts (int i) {

@@ -25,23 +25,15 @@ import gov.nasa.ltl.graph.*;
  * DOCUMENT ME!
  */
 public class Translator {
-  public static final int LTL2AUT = 0;
-  public static final int LTL2BUCHI = 1;
-  private static int      algorithm = LTL2BUCHI; // by default 
+  public static enum Algorithm { LTL2AUT, LTL2BUCHI };
+  private static Algorithm algorithm = Algorithm.LTL2BUCHI; // by default 
 
-  public static int get_algorithm () {
+  public static Algorithm get_algorithm () {
     return algorithm;
   }
 
-  public static boolean set_algorithm (int alg) {
-    // returns true iff value was legal
-    if ((alg == LTL2AUT) || (alg == LTL2BUCHI)) {
-      algorithm = alg;
-
-      return true;
-    } else {
-      return false;
-    }
+  public static void set_algorithm (Algorithm alg) {
+    algorithm = alg;
   }
 
   public static Graph<String> translate (String formula) {

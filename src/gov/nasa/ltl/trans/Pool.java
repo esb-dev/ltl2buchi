@@ -42,7 +42,9 @@ public class Pool {
   }
 
   public static void stop () {
-    stopped = true;
-    last_assigned--;
+    if (!stopped) {
+      stopped = true;
+      last_assigned--;
+    }
   }
 }

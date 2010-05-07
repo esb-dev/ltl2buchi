@@ -76,7 +76,7 @@ class Automaton<PropT> {
       return g;
     }
 
-    int size = Pool.assign();
+    int size = Pool.assign() + 1;
     gov.nasa.ltl.graph.Node<PropT>[] nodes = new gov.nasa.ltl.graph.Node[size];
 
     for (int i = 0; i < size; i++) {
@@ -117,7 +117,7 @@ class Automaton<PropT> {
     for (Node<PropT> currState: nodeList) {
       if (currState.getField_next().equals(nd.getField_next()) && 
               currState.compare_accepting(nd) && 
-              (Translator.get_algorithm() == Translator.LTL2BUCHI || 
+              (Translator.get_algorithm() == Translator.Algorithm.LTL2BUCHI || 
                 (currState.getField_old().equals(nd.getField_old())))) {
         //System.out.println("Match found");
         return currState;
@@ -136,18 +136,18 @@ class Automaton<PropT> {
     // check if next field of node is already represented
     int index;
 
-    for (index = 0; index < Pool.assign(); index++) {
+    for (index = 0; index <= Pool.assign(); index++) {
       if (equivalence_classes[index] == null) {
         //	System.out.println("Null object");
         break;
-      } else if ((Translator.get_algorithm() == Translator.LTL2BUCHI) && 
+      } else if ((Translator.get_algorithm() == Translator.Algorithm.LTL2BUCHI) && 
                      (equivalence_classes[index].getField_next().equals(nd.getField_next()))) {
         //	System.out.println("Successful merge");
         return (equivalence_classes[index].getNodeId());
       }
     }
 
-    assert index < Pool.assign() :
+    assert index <= Pool.assign() :
       "ERROR - size of equivalence classes array was incorrect";
 
     equivalence_classes[index] = nd;
@@ -160,10 +160,9 @@ class Automaton<PropT> {
     // now also fixes equivalence classes
     Pool.stop();
 
-    int     automatonSize = Pool.assign();
-    // Java cannot instantiate arrays of generic classes.
-    State<PropT>[] RTstruct = (State<PropT>[])new State[automatonSize];
-    equivalence_classes = (Node<PropT>[])new Node[automatonSize];
+    int automatonSize = Pool.assign() + 1;
+    State<PropT>[] RTstruct = new State[automatonSize];
+    equivalence_classes = new Node[automatonSize];
 
     for (Node<PropT> current: nodeList) {
       current.set_equivalenceId(index_equivalence(current));

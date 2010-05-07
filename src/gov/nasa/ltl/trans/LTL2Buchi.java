@@ -42,7 +42,7 @@ public class LTL2Buchi {
 
 		System.out.println("\nAuthors Dimitra Giannakopoulou & Flavio Lerda, \n(c) 2001,2003 NASA Ames Research Center\n");
 
-		Translator.set_algorithm(Translator.LTL2BUCHI);
+		Translator.set_algorithm(Translator.Algorithm.LTL2BUCHI);
 
 		if (args.length != 0) {
 			for (int i = 0; i < args.length; i++) {
@@ -53,9 +53,9 @@ public class LTL2Buchi {
 
 					if (i < args.length) {
 						if (args[i].equals("ltl2buchi")) {
-							Translator.set_algorithm(Translator.LTL2BUCHI);
+							Translator.set_algorithm(Translator.Algorithm.LTL2BUCHI);
 						} else if (args[i].equals("ltl2aut")) {
-							Translator.set_algorithm(Translator.LTL2AUT);
+							Translator.set_algorithm(Translator.Algorithm.LTL2AUT);
 						} else {
 							usage_warning();
 
@@ -158,12 +158,13 @@ public class LTL2Buchi {
 	}
 	
 	public static <PropT> Graph<PropT> translate(Formula<PropT> formula,
-	    boolean rewrite, boolean bisim, boolean fair_sim) 
-	    throws ParseErrorException {
+	    boolean rewrite, boolean bisim, boolean fair_sim) {
         if (rewrite) {
           formula = new Rewriter<PropT> (formula).rewrite();
-          System.out.println("Rewritten as       : " + formula);
-          System.out.println();
+          if (debug) {
+            System.out.println("Rewritten as       : " + formula);
+            System.out.println();
+          }
         }
 		Graph<PropT> gba = Translator.translate(formula);
 		printStats(gba, "Generalized buchi automaton generated");
@@ -181,7 +182,8 @@ public class LTL2Buchi {
 			ba = SFSReduction.reduce(ba);
 		    printStats(ba, "Degeneralized buchi automaton generated");
 		}
-		System.out.println("***********************\n");
+		if (debug)
+		  System.out.println("***********************\n");
 		reset_all_static();
 		return ba;
 	}
@@ -191,7 +193,7 @@ public class LTL2Buchi {
 		return translate(formula, true, true, true);
 	}
 	
-	public static <PropT> Graph<PropT> translate(Formula<PropT> formula) throws ParseErrorException {
+	public static <PropT> Graph<PropT> translate(Formula<PropT> formula) {
 	    return translate(formula, true, true, true);
 	}
 
