@@ -16,6 +16,8 @@ import gov.nasa.ltl.trans.Pool;
 import gov.nasa.ltl.trans.Rewriter;
 import gov.nasa.ltl.trans.Translator;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadMXBean;
 import java.util.Iterator;
 import java.util.Random;
 
@@ -27,41 +29,64 @@ import java.util.Random;
  * to standard output, the gnuplot commands to display them are:<br />
  * <code>set key autotitle columnheader</code><br />
  * <code>plot [0:<em>L</em>] [0:1] for [i in "2 4 6 8"] "data.file" using 1:i:(column(i+1)) with errorbars</code><br />
- * The parameters of the experiment are set via static variables of
- * this class (for now).
+ * <p>
+ * Usage: <code>java gov.nasa.ltl.tests.RandomFormulae [-N n]
+ * [-L min max inc] [-F f] [-P p] [-seed s] [-optimise] [-verbose]</code>
+ * <p>
+ * If the verbose flag is set, extra information is printed to standard
+ * error in gnuplot comment format (so redirecting standard output and
+ * error to the same file still yields valid input for gnuplot).
  * @author estar
  *
  */
 public class RandomFormulae {
-  public static class FormulaGenerator implements Iterator<Formula<Integer>> {
+  /**
+   * Infinite iterator which returns a random {@link Formula} of
+   * the required length every time.
+   * @author estar
+   *
+   */
+  private static class FormulaGenerator implements Iterator<Formula<Integer>> {
     private int length, names;
     private double pUorV;
     private Random rand;
-    
-    public FormulaGenerator (int length, int names, double pUorV) {
-      this (length, names, pUorV, null);
-    }
-    
+
+    /**
+     * Set up the iterator.
+     * @param length length of every generated formula
+     * @param names number of available atoms
+     * @param pUorV probability of choosing a U or V operator
+     * @param rand random number generator
+     */
     public FormulaGenerator (int length, int names, double pUorV, Random rand) {
       assert 0 <= pUorV && pUorV <= 1 : "bad probability for U or V";
       assert length > 0 : "length must be positive";
       assert names > 0 : "need at least one name";
-      if (rand == null)
-        this.rand = new Random ();
-      else
-        this.rand = rand;
+      assert rand != null : "need a random number generator";
       this.length = length;
       this.names = names;
       this.pUorV = pUorV;
+      this.rand = rand;
     }
 
+    /**
+     * No-op.
+     */
     @Override public boolean hasNext () { return true; }
 
+    /**
+     * Returns a new random formula.
+     */
     @Override
     public Formula<Integer> next () {
       return randomFormula (length);
     }
     
+    /**
+     * Recursively generate a random formula.
+     * @param length length of the desired subformula
+     * @return
+     */
     private Formula<Integer> randomFormula (int length) {
       int name = 0, sublength;
       @SuppressWarnings ("unused")
@@ -108,48 +133,82 @@ public class RandomFormulae {
       }
     }
 
+    /**
+     * No-op.
+     */
     @Override public void remove () {}
   }
 
+  /**
+   * Infinite list of random {@link Formula}e of a specified length.
+   * @author estar
+   *
+   */
   public static class FormulaSource implements Iterable<Formula<Integer>> {
     private FormulaGenerator gen;
-    
-    public FormulaSource (int length, int names, double pUorV) {
-      this (length, names, pUorV, null);
-    }
 
+    /**
+     * Set up list.
+     * @param length length of each generated formula
+     * @param names number of available atoms
+     * @param pUorV probability of choosing U and V operators
+     * @param rand random number generator
+     */
     public FormulaSource (int length, int names, double pUorV, Random rand) {
       gen = new FormulaGenerator (length, names, pUorV, rand);
     }
     
+    /**
+     * Get a random formula.
+     */
     @Override
     public Iterator<Formula<Integer>> iterator () {
       return gen;
     }
   }
   
-  public static int N = 5, Lmin = 5, Lmax = 30, Linc = 5,
-    F = 100, seed = 0;
-  public static boolean haveSeed = false, optimise = false;
-  static double P = 1.0/3.0;
+  public static int N = 3, Lmin = 5, Lmax = 30, Linc = 5,
+    F = 100;
+  public static long seed = 0;
+  public static boolean haveSeed = false, optimise = false, verbose = false;
+  public static double P = 1.0/3.0;
+  // Save given string representation of P, if any, to avoid rounding issues.
+  private static String Pstr = null;
+  private static boolean haveCpuTime, haveP = false;
 
   /**
    * @param args
    */
   public static void main (String[] args) {
     Random rand;
-    if (haveSeed)
-      rand = new Random (seed);
-    else
-      rand = new Random ();
-    // TODO: parse args to get custom values
-    System.out.println ("\"L\" \"GBA states\" \"\" \"GBA transitions\" "+
+    ThreadMXBean tb = ManagementFactory.getThreadMXBean ();
+    parseArgs (args);
+    if (!haveSeed)
+      seed = System.nanoTime ();
+    rand = new Random (seed);
+    if (tb.isCurrentThreadCpuTimeSupported ()) {
+      haveCpuTime = true;
+      tb.setThreadCpuTimeEnabled (true);
+    }
+    verbose ("Parameters:\n" +
+             "-N " + N + " -L " + Lmin + " " + Lmax + " " + Linc +
+             " -P " + (haveP ? Pstr : P) + " -F " + F + " -seed " + seed +
+             (optimise ? " -optimise" : "") +
+             (verbose ? " -verbose" : "") + "\n");
+    verbose ("Plot me with:\n" +
+             "set key autotitle columnheader\n" +
+             "plot [0:" + (Lmax + Linc) + "] [0:1] for [i in \"2 4 6 8\"] " +
+             "\"data.file\" using 1:i:(column(i+1)) with errorbars\n");
+    System.out.println ("\"L\" \"GBA states\" \"\" \"GBA transitions\" " +
         "\"\" \"BA states\" \"\" \"BA transitions\" \"\"");
+    System.out.flush ();
     for (int L = Lmin; L <= Lmax; L += Linc) {
       FormulaSource formulae = new FormulaSource (L, N, P, rand);
       int i = 0;
       double[] baStates = new double[F], baTrans = new double[F],
         gbaStates = new double[F], gbaTrans = new double[F];
+      long[] autTime = new long[F], buTime = new long[F];
+      long time = 0;
       for (Formula<Integer> f: formulae) {
         if (i >= F)
           break;
@@ -159,7 +218,11 @@ public class RandomFormulae {
         Translator.set_algorithm (Translator.Algorithm.LTL2AUT);
         Node.reset_static ();
         Pool.reset_static ();
+        if (haveCpuTime)
+          time = tb.getCurrentThreadCpuTime ();
         gbaAut = Translator.translate (f);
+        if (haveCpuTime)
+          autTime[i] = tb.getCurrentThreadCpuTime () - time;
         if (optimise)
           gbaAut = SuperSetReduction.reduce (gbaAut);
         baAut = Degeneralize.degeneralize (gbaAut);
@@ -178,7 +241,11 @@ public class RandomFormulae {
         Translator.set_algorithm (Translator.Algorithm.LTL2BUCHI);
         Node.reset_static ();
         Pool.reset_static ();
+        if (haveCpuTime)
+          time = tb.getCurrentThreadCpuTime ();
         gbaBu = Translator.translate (f);
+        if (haveCpuTime)
+          buTime[i] = tb.getCurrentThreadCpuTime () - time;
         if (optimise)
           gbaBu = SuperSetReduction.reduce (gbaBu);
         baBu = Degeneralize.degeneralize (gbaBu);
@@ -192,24 +259,116 @@ public class RandomFormulae {
         Formula.reset_static ();
         i++;
       }
-      output (L, gbaStates, gbaTrans, baStates, baTrans);
+      output (L, gbaStates, gbaTrans, baStates, baTrans, autTime, buTime);
     }
   }
   
+  private static void parseArgs (String[] args) {
+    for (int i = 0; i < args.length; i++) {
+      if (args[i].equals ("-N")) {
+        if (i + 1 >= args.length)
+          usage ();
+        try {
+          N = Integer.parseInt (args[i + 1]);
+        } catch (NumberFormatException e) {
+          usage ();
+        }
+        if (N < 1)
+          usage ();
+        i++;
+      } else if (args[i].equals ("-L")) {
+        if (i + 3 >= args.length)
+          usage ();
+        try {
+          Lmin = Integer.parseInt (args[i + 1]);
+          Lmax = Integer.parseInt (args[i + 2]);
+          Linc = Integer.parseInt (args[i + 3]);
+        } catch (NumberFormatException e) {
+          usage ();
+        }
+        if (Lmin < 1 || Lmax < 1 || Lmax < Lmin || Linc < 1)
+          usage ();
+        i += 3;
+      } else if (args[i].equals ("-F")) {
+        if (i + 1 >= args.length)
+          usage ();
+        try {
+          F = Integer.parseInt (args[i + 1]);
+        } catch (NumberFormatException e) {
+          usage ();
+        }
+        i++;
+      } else if (args[i].equals ("-P")) {
+        if (i + 1 >= args.length)
+          usage ();
+        try {
+          P = Double.parseDouble (args[i + 1]);
+        } catch (NumberFormatException e) {
+          usage ();
+        }
+        if (P < 0 || P > 1)
+          usage ();
+        haveP = true;
+        Pstr = args[i + 1];
+        i++;
+      } else if (args[i].equals ("-seed")) {
+        if (i + 1 >= args.length)
+          usage ();
+        try {
+          seed = Long.parseLong (args[i + 1]);
+          haveSeed = true;
+        } catch (NumberFormatException e) {
+          usage ();
+        }
+        i++;
+      } else if (args[i].equals ("-optimise")) {
+        optimise = true;
+      } else if (args[i].equals ("-verbose")) {
+        verbose = true;
+      } else
+        usage ();
+    }
+  }
+  
+  private static void usage () {
+    System.err.println ("usage: gov.nasa.ltl.tests.RandomFormulae " +
+          "[-N n] [-L min max inc] [-F f] [-P p] [-seed s] " +
+          "[-optimise] [-verbose]");
+    System.err.flush ();
+    System.exit (1);
+  }
+  
+  private static void verbose (String msg) {
+    System.err.println ("# " + msg.replaceAll ("\n", "\n# "));
+  }
+  
   private static void output (int L, double[] gbaStates,
-      double[] gbaTrans, double[] baStates, double[] baTrans) {
+      double[] gbaTrans, double[] baStates, double[] baTrans,
+      long[] autTime, long[] buTime) {
     double gbaStatesM = mean (gbaStates), gbaTransM = mean (gbaTrans),
            baStatesM = mean (baStates), baTransM = mean (baTrans),
            gbaStatesD = sigma (gbaStates, gbaStatesM),
            gbaTransD = sigma (gbaTrans, gbaTransM),
            baStatesD = sigma (baStates, baStatesM),
-           baTransD = sigma (baTrans, baTransM);
+           baTransD = sigma (baTrans, baTransM),
+           autM = mean (autTime), buM = mean (buTime);
+    if (haveCpuTime)
+      verbose ("L = " + L + " average LTL2AUT time = " + (autM / 1E6) +
+               " ms, average LTL2Buchi time = " + (buM / 1E6) + " ms");
     System.out.println ("" + L + " " + gbaStatesM + " " +
         gbaStatesD + " " + gbaTransM + " " + gbaTransD + " " +
         baStatesM + " " + baStatesD + " " + baTransM + " " + baTransD);
+    System.out.flush ();
   }
   
   private static double mean(double[] values) {
+    double s = 0;
+    for (int i = 0; i < values.length; i++)
+      s += values[i];
+    return s / values.length;
+  }
+  
+  private static double mean(long[] values) {
     double s = 0;
     for (int i = 0; i < values.length; i++)
       s += values[i];
@@ -220,6 +379,6 @@ public class RandomFormulae {
     double s = 0;
     for (int i = 0; i < values.length; i++)
       s += (values[i] - mean) * (values[i] - mean);
-    return s / values.length;
+    return Math.sqrt (s / values.length);
   }
 }
