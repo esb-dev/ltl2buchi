@@ -174,7 +174,7 @@ public class RandomFormulae {
   public static double P = 1.0/3.0;
   // Save given string representation of P, if any, to avoid rounding issues.
   private static String Pstr = null;
-  private static boolean haveCpuTime, haveP = false;
+  private static boolean haveCpuTime;
 
   /**
    * @param args
@@ -186,13 +186,18 @@ public class RandomFormulae {
     if (!haveSeed)
       seed = System.nanoTime ();
     rand = new Random (seed);
+    // Make sure the number we print is the number we’ll use.
+    if (Pstr == null) {
+      Pstr = "" + P;
+      P = Double.valueOf (Pstr);
+    }
     if (tb.isCurrentThreadCpuTimeSupported ()) {
       haveCpuTime = true;
       tb.setThreadCpuTimeEnabled (true);
     }
     verbose ("Parameters:\n" +
              "-N " + N + " -L " + Lmin + " " + Lmax + " " + Linc +
-             " -P " + (haveP ? Pstr : P) + " -F " + F + " -seed " + seed +
+             " -P " + Pstr + " -F " + F + " -seed " + seed +
              (optimise ? " -optimise" : "") +
              (verbose ? " -verbose" : "") + "\n");
     verbose ("Plot me with:\n" +
@@ -308,7 +313,6 @@ public class RandomFormulae {
         }
         if (P < 0 || P > 1)
           usage ();
-        haveP = true;
         Pstr = args[i + 1];
         i++;
       } else if (args[i].equals ("-seed")) {
@@ -339,7 +343,8 @@ public class RandomFormulae {
   }
   
   private static void verbose (String msg) {
-    System.err.println ("# " + msg.replaceAll ("\n", "\n# "));
+    if (verbose)
+      System.err.println ("# " + msg.replaceAll ("\n", "\n# "));
   }
   
   private static void output (int L, double[] gbaStates,
