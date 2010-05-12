@@ -28,11 +28,11 @@ public class Translator {
   public static enum Algorithm { LTL2AUT, LTL2BUCHI };
   private static Algorithm algorithm = Algorithm.LTL2BUCHI; // by default 
 
-  public static Algorithm get_algorithm () {
+  public static Algorithm getAlgorithm () {
     return algorithm;
   }
 
-  public static void set_algorithm (Algorithm alg) {
+  public static void setAlgorithm (Algorithm alg) {
     algorithm = alg;
   }
 
@@ -46,9 +46,10 @@ public class Translator {
   }
   
   public static <PropT> Graph<PropT> translate(Formula<PropT> formula) {
-    Node<PropT> init = Node.createInitial (formula);
-    State<PropT>[] states = 
-      init.expand (new Automaton<PropT>()).structForRuntAnalysis ();
-    return Automaton.SMoutput (states);
+    Pool pool = new Pool ();
+    Node<PropT> init = Node.createInitial (formula, pool);
+    Automaton<PropT> a = new Automaton<PropT> (pool);
+    State<PropT>[] states = init.expand (a).structForRuntAnalysis ();
+    return a.SMoutput (states);
   }
 }

@@ -30,44 +30,16 @@ import gov.nasa.ltl.graph.*;
 class Automaton<PropT> {
   private LinkedList<Node<PropT>> nodeList = new LinkedList<Node<PropT>>();
   private Node<PropT>[]   equivalence_classes; // array of representatives of equivalent states
+  private Pool pool;
 
-  public Automaton () {
+  Automaton (Pool pool) {
     equivalence_classes = null;
-  }
-
-  public static <PropT> void FSPoutput (State<PropT>[] automaton) {
-    boolean comma = false;
-
-    if (automaton == null) {
-      System.out.println("\n\nRES = STOP.");
-
-      return;
-    } else {
-      System.out.println("\n\nRES = S0,");
-    }
-
-    int size = Pool.assign();
-
-    for (int i = 0; i < size; i++) {
-      if ((automaton[i] != null) && 
-              (i == automaton[i].get_representativeId())) // a representative so print
-      {
-        if (comma) {
-          System.out.println("),");
-        }
-
-        comma = true;
-        System.out.print("S" + automaton[i].get_representativeId());
-        System.out.print("=");
-        automaton[i].FSPoutput();
-      }
-    }
-
-    System.out.println(").\n");
+    this.pool = pool;
   }
 
   @SuppressWarnings ("unchecked")
-  public static <PropT> Graph<PropT> SMoutput (State<PropT>[] automaton) {
+  public Graph<PropT> SMoutput (State<PropT>[] automaton) {
+    int accepting_conds;
     Graph<PropT> g = new Graph<PropT>();
     g.setStringAttribute("type", "gba");
     g.setStringAttribute("ac", "edges");
@@ -76,16 +48,15 @@ class Automaton<PropT> {
       return g;
     }
 
-    int size = Pool.assign() + 1;
+    int size = pool.getIdCount ();
     gov.nasa.ltl.graph.Node<PropT>[] nodes = new gov.nasa.ltl.graph.Node[size];
 
     for (int i = 0; i < size; i++) {
       if ((automaton[i] != null) && 
               (i == automaton[i].get_representativeId())) {
-        nodes[i] = new gov.nasa.ltl.graph.Node<PropT>(g);
+        nodes[i] = new gov.nasa.ltl.graph.Node<PropT> (g);
         nodes[i].setStringAttribute("label", 
-                                    "S" + 
-                                    automaton[i].get_representativeId());
+                                    "S" + automaton[i].get_representativeId());
       }
     }
 
@@ -95,11 +66,13 @@ class Automaton<PropT> {
         automaton[i].SMoutput(nodes, nodes[i]);
       }
     }
-
-    if (Node.accepting_conds == 0) {
+    
+    assert nodeList.size () > 0;
+    accepting_conds = nodeList.get (0).getAcceptingConds ();
+    if (accepting_conds == 0) {
       g.setIntAttribute("nsets", 1);
     } else {
-      g.setIntAttribute("nsets", Node.accepting_conds);
+      g.setIntAttribute("nsets", accepting_conds);
     }
 
     return g;
@@ -117,7 +90,7 @@ class Automaton<PropT> {
     for (Node<PropT> currState: nodeList) {
       if (currState.getField_next().equals(nd.getField_next()) && 
               currState.compare_accepting(nd) && 
-              (Translator.get_algorithm() == Translator.Algorithm.LTL2BUCHI || 
+              (Translator.getAlgorithm() == Translator.Algorithm.LTL2BUCHI || 
                 (currState.getField_old().equals(nd.getField_old())))) {
         //System.out.println("Match found");
         return currState;
@@ -136,18 +109,18 @@ class Automaton<PropT> {
     // check if next field of node is already represented
     int index;
 
-    for (index = 0; index <= Pool.assign(); index++) {
+    for (index = 0; index <= pool.lastId (); index++) {
       if (equivalence_classes[index] == null) {
         //	System.out.println("Null object");
         break;
-      } else if ((Translator.get_algorithm() == Translator.Algorithm.LTL2BUCHI) && 
+      } else if ((Translator.getAlgorithm() == Translator.Algorithm.LTL2BUCHI) && 
                      (equivalence_classes[index].getField_next().equals(nd.getField_next()))) {
         //	System.out.println("Successful merge");
         return (equivalence_classes[index].getNodeId());
       }
     }
 
-    assert index <= Pool.assign() :
+    assert index <= pool.lastId () :
       "ERROR - size of equivalence classes array was incorrect";
 
     equivalence_classes[index] = nd;
@@ -158,9 +131,9 @@ class Automaton<PropT> {
   @SuppressWarnings ("unchecked")
   public State<PropT>[] structForRuntAnalysis () {
     // now also fixes equivalence classes
-    Pool.stop();
+    pool.stop ();
 
-    int automatonSize = Pool.assign() + 1;
+    int automatonSize = pool.getIdCount ();
     State<PropT>[] RTstruct = new State[automatonSize];
     equivalence_classes = new Node[automatonSize];
 

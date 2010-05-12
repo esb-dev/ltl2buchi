@@ -32,75 +32,17 @@ public class Transition<PropT> {
   private BitSet    accepting;
   private boolean   safe_accepting;
   private Guard<PropT> guard;
+  private int       accepting_conds;
 
-  public Transition (TreeSet<Formula<PropT>> prop, int nd_id, BitSet acc, boolean safety) {
+  Transition (TreeSet<Formula<PropT>> prop, int nd_id, BitSet acc,
+                     boolean safety, int accepting_conds) {
     propositions = prop;
     guard = new Guard<PropT> (prop);
     pointsTo = nd_id;
-    accepting = new BitSet(Node.getAcceptingConds());
+    this.accepting_conds = accepting_conds;
+    accepting = new BitSet (accepting_conds);
     accepting.or(acc);
     safe_accepting = safety;
-  }
-
-  public void FSPoutput () {
-    if (propositions.isEmpty()) {
-      System.out.print("TRUE{");
-    } else {
-      // first print the propositions involved
-      Iterator<Formula<PropT>> it = propositions.iterator();
-      Formula<PropT> nextForm = null;
-      StringBuilder act = new StringBuilder();
-      Formula.Content cont; // stores content of formula
-      boolean       need_AND = false; // connect with AND multiple propositions
-
-      while (it.hasNext()) {
-        nextForm = it.next();
-        cont = nextForm.getContent();
-
-        if (need_AND) {
-          act.append("_AND_");
-        }
-
-        need_AND = true;
-
-        switch (cont) {
-        case NOT:
-          act.append('N');
-          act.append(nextForm.getSub1().getName());
-
-          break;
-
-        case TRUE:
-          act.append("TRUE");
-
-          break;
-
-        default:
-          act.append(nextForm.getName());
-
-          break;
-        }
-      }
-
-      act.append('{');
-      System.out.print(act);
-    }
-
-    if (Node.accepting_conds == 0) {
-      if (safe_accepting == true) {
-        System.out.print("0");
-      }
-    } else {
-      for (int i = 0; i < Node.accepting_conds; i++) {
-        if (!accepting.get(i)) {
-          System.out.print(i);
-        }
-      }
-    }
-
-
-    // and then the rest - easy
-    System.out.print("} -> S" + pointsTo + " ");
   }
 
   public void SMoutput (gov.nasa.ltl.graph.Node<PropT>[] nodes, 
@@ -108,7 +50,7 @@ public class Transition<PropT> {
     String action = "-";
     Edge<PropT> e = new Edge<PropT>(node, nodes[pointsTo], guard, action);
 
-    if (Node.accepting_conds == 0) {
+    if (accepting_conds == 0) {
       //  Dimitra - Jan 10 2003
       // Believe there is a bug with the way we decided whether node was safety accepting
       // with example !<>(Xa \/ <>c)
@@ -119,7 +61,7 @@ public class Transition<PropT> {
 
       //      }
     } else {
-      for (int i = 0; i < Node.accepting_conds; i++) {
+      for (int i = 0; i < accepting_conds; i++) {
         if (!accepting.get(i)) {
           e.setBooleanAttribute("acc" + i, true);
 
@@ -176,5 +118,12 @@ public class Transition<PropT> {
   
   public boolean isAccepting (int i) {
     return accepting.get (i);
+  }
+
+  /**
+   * @return the accepting_conds
+   */
+  public int getAcceptingConds () {
+    return accepting_conds;
   }
 }

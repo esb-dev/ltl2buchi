@@ -159,11 +159,11 @@ class FSPWriter<PropT> extends Writer<PropT> {
   public void write (Transition<PropT> t) {
     write (t.getGuard ());
     out.print ('{');
-    if (gov.nasa.ltl.trans.Node.accepting_conds == 0) {
+    if (t.getAcceptingConds () == 0) {
       if (t.isSafeAccepting ())
         out.print ('0');
     } else
-      for (int i = 0; i < gov.nasa.ltl.trans.Node.accepting_conds; i++)
+      for (int i = 0; i < t.getAcceptingConds (); i++)
         if (t.isAccepting (i))
           out.print (i);
     out.print ("} -> S" + t.goesTo () + " ");

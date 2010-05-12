@@ -42,7 +42,7 @@ public class LTL2Buchi {
 
 		System.out.println("\nAuthors Dimitra Giannakopoulou & Flavio Lerda, \n(c) 2001,2003 NASA Ames Research Center\n");
 
-		Translator.set_algorithm(Translator.Algorithm.LTL2BUCHI);
+		Translator.setAlgorithm(Translator.Algorithm.LTL2BUCHI);
 
 		if (args.length != 0) {
 			for (int i = 0; i < args.length; i++) {
@@ -53,9 +53,9 @@ public class LTL2Buchi {
 
 					if (i < args.length) {
 						if (args[i].equals("ltl2buchi")) {
-							Translator.set_algorithm(Translator.Algorithm.LTL2BUCHI);
+							Translator.setAlgorithm(Translator.Algorithm.LTL2BUCHI);
 						} else if (args[i].equals("ltl2aut")) {
-							Translator.set_algorithm(Translator.Algorithm.LTL2AUT);
+							Translator.setAlgorithm(Translator.Algorithm.LTL2AUT);
 						} else {
 							usage_warning();
 
@@ -129,9 +129,7 @@ public class LTL2Buchi {
 	}
 
 	public static void reset_all_static() {
-		Node.reset_static();
 		Formula.reset_static();
-		Pool.reset_static();
 	}
 
 	public static Graph<String> translate(String formula, boolean rewrite,
@@ -161,10 +159,8 @@ public class LTL2Buchi {
 	    boolean rewrite, boolean bisim, boolean fair_sim) {
         if (rewrite) {
           formula = new Rewriter<PropT> (formula).rewrite();
-          if (debug) {
-            System.out.println("Rewritten as       : " + formula);
-            System.out.println();
-          }
+          if (debug)
+            System.out.println("Rewritten as       : " + formula + "\n");
         }
 		Graph<PropT> gba = Translator.translate(formula);
 		printStats(gba, "Generalized buchi automaton generated");
@@ -173,14 +169,14 @@ public class LTL2Buchi {
 		Graph<PropT> ba = Degeneralize.degeneralize(gba);
 		printStats(ba, "Degeneralized buchi automaton generated");
 		ba = SCCReduction.reduce(ba);
-	    printStats(ba, "Degeneralized buchi automaton generated");
+	    printStats(ba, "Strongly connected component reduction");
 		if (bisim) {
 			ba = Simplify.simplify(ba);
-		    printStats(ba, "Degeneralized buchi automaton generated");
+		    printStats(ba, "Bisimulation applied");
 		}
 		if (fair_sim) {
 			ba = SFSReduction.reduce(ba);
-		    printStats(ba, "Degeneralized buchi automaton generated");
+		    printStats(ba, "Fair simulation applied");
 		}
 		if (debug)
 		  System.out.println("***********************\n");

@@ -62,24 +62,6 @@ public class State<PropT> {//implements Comparable<State> { // removed (non-conf
      return accepting;
      }
    */
-  public void FSPoutput () {
-    ListIterator<Transition<PropT>> iter = transitions.listIterator(0);
-    Transition<PropT> nextTrans;
-    boolean      first_trans = true;
-
-    while (iter.hasNext()) {
-      nextTrans = iter.next();
-
-      if (first_trans) {
-        System.out.print("(");
-        first_trans = false;
-      } else {
-        System.out.print("|");
-      }
-
-      nextTrans.FSPoutput();
-    }
-  }
 
   public void SMoutput (gov.nasa.ltl.graph.Node<PropT>[] nodes, 
                         gov.nasa.ltl.graph.Node<PropT> node) {

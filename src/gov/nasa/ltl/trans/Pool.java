@@ -20,31 +20,49 @@ package gov.nasa.ltl.trans;
 //Written by Dimitra Giannakopoulou, 19 Jan 2001
 
 /**
- * DOCUMENT ME!
+ * Counter which generates IDs for Node instances.
  */
-public class Pool {
-  private static int     last_assigned = 0;
-  private static boolean stopped = false;
+class Pool {
+  private int     last_assigned = 0;
+  private boolean stopped = false;
 
-  public static int assign () {
-    if (!stopped) {
-      //			System.out.println("Value of last_assigned " +last_assigned);
-      return (last_assigned++);
-    } else {
-      //			System.out.println("Value of last_assigned " + last_assigned);
-      return last_assigned;
-    }
+  /**
+   * Obtain new ID. Should not be called if this Pool instance
+   * has been stopped.
+   * @return new (distinct) ID
+   */
+  int requestId () {
+    assert !stopped : "ID requested, but Pool is already stopped";
+    return last_assigned++;
+  }
+  
+  /**
+   * Return the last ID returned by {@link Pool#requestId()}.
+   * Only works if that method has actually been called at
+   * least once.
+   * @return last ID
+   */
+  int lastId () {
+    assert last_assigned > 0 : "no IDs assigned yet";
+    return last_assigned - 1;
   }
 
-  public static void reset_static () {
-    last_assigned = 0;
-    stopped = false;
+  /**
+   * Get the number of IDs generated so far. Only works if
+   * this Pool instance has been stopped.
+   * @return number of generated IDs
+   */
+  int getIdCount () {
+    assert stopped : "not done assigning IDs yet";
+    return last_assigned;
   }
 
-  public static void stop () {
-    if (!stopped) {
-      stopped = true;
-      last_assigned--;
-    }
+  /**
+   * Stop this Pool instance. This makes calls to {@link Pool#requestId()}
+   * invalid and calls to {@link Pool#getIdCount()} valid.
+   */
+  void stop () {
+    assert !stopped : "Pool is already stopped";
+    stopped = true;
   }
 }

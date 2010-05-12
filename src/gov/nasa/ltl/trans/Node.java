@@ -26,8 +26,9 @@ import java.util.*;
  * DOCUMENT ME!
  */
 public class Node<PropT> implements Comparable<Node<PropT>> { // removed (non-conforming) -pcd
-  public static int      accepting_conds = 0;
-  private static boolean init_collapsed = false;
+  private int            accepting_conds = 0;
+  // This is only ever checked if nodeId == 0 anyway:
+  private boolean init_collapsed = false;
   private int            nodeId;
   private TreeSet<Node<PropT>>    incoming;
   private TreeSet<Formula<PropT>> toBeDone;
@@ -37,9 +38,12 @@ public class Node<PropT> implements Comparable<Node<PropT>> { // removed (non-co
   private BitSet         right_of_untils;
   private Node<PropT>    OtherTransitionSource;
   private int equivalenceId;
+  private Pool pool;
 
-  public Node () {
-    nodeId = Pool.assign();
+  Node (Pool pool, int accepting_conds) {
+    this.pool = pool;
+    this.accepting_conds = accepting_conds;
+    nodeId = pool.requestId ();
     incoming = new TreeSet<Node<PropT>>();
     toBeDone = new TreeSet<Formula<PropT>>();
     old = new TreeSet<Formula<PropT>>();
@@ -49,10 +53,12 @@ public class Node<PropT> implements Comparable<Node<PropT>> { // removed (non-co
     right_of_untils = new BitSet(accepting_conds);
   }
 
-  public Node (TreeSet<Node<PropT>> in, TreeSet<Formula<PropT>> newForm, 
-               TreeSet<Formula<PropT>> done, TreeSet<Formula<PropT>> nx, 
-               BitSet acc, BitSet rous) {
-    nodeId = Pool.assign();
+  Node (Pool pool, int accepting_conds, TreeSet<Node<PropT>> in,
+        TreeSet<Formula<PropT>> newForm, TreeSet<Formula<PropT>> done,
+        TreeSet<Formula<PropT>> nx, BitSet acc, BitSet rous) {
+    this.pool = pool;
+    this.accepting_conds = accepting_conds;
+    nodeId = pool.requestId ();
     incoming = new TreeSet<Node<PropT>>(in);
     toBeDone = new TreeSet<Formula<PropT>>(newForm);
     old = new TreeSet<Formula<PropT>>(done);
@@ -64,27 +70,22 @@ public class Node<PropT> implements Comparable<Node<PropT>> { // removed (non-co
     right_of_untils.or(rous);
   }
 
-  public static int getAcceptingConds () {
+  public int getAcceptingConds () {
     return accepting_conds;
   }
 
-  public static <PropT> Node<PropT> createInitial (Formula<PropT> form) {
-    accepting_conds = form.initialize(); // first mark right forms of untils;
+  public static <PropT> Node<PropT> createInitial (Formula<PropT> form, Pool pool) {
+    int accepting_conds = form.initialize(); // first mark right forms of untils;
 
     //    System.out.println("Accepting conditions: " + accepting_conds);
-    Node<PropT> init = new Node<PropT>();
-    init.nodeId = 0;
+    Node<PropT> init = new Node<PropT> (pool, accepting_conds);
+    assert init.nodeId == 0;
 
     if (form.getContent() != Formula.Content.TRUE) {
       init.decompose_ands_for_next(form);
     }
 
     return init;
-  }
-
-  public static void reset_static () {
-    accepting_conds = 0;
-    init_collapsed = false;
   }
 
   public TreeSet<Formula<PropT>> getField_next () {
@@ -132,7 +133,8 @@ public class Node<PropT> implements Comparable<Node<PropT>> { // removed (non-co
         }
 
         RTautomaton[stateId].add(
-              new Transition<PropT>(Alternative.old, equivalenceId, accepting, safety));
+              new Transition<PropT>(Alternative.old, equivalenceId,
+                                    accepting, safety, accepting_conds));
       }
 
       Alternative = Alternative.OtherTransitionSource;
@@ -174,15 +176,9 @@ public class Node<PropT> implements Comparable<Node<PropT>> { // removed (non-co
        }
    */
   public void debug () {
-    Iterator<Formula<PropT>> iterOld = old.iterator();
-    Formula<PropT> nextForm = null;
-
     System.out.println("debugging now");
-    while (iterOld.hasNext()) {
-      nextForm = iterOld.next();
-
+    for (Formula<PropT> nextForm: old)
       System.out.println("Content is " + nextForm.getContent());
-    }
   }
 
   public void decompose_ands_for_next (Formula<PropT> form) {
@@ -213,7 +209,7 @@ public class Node<PropT> implements Comparable<Node<PropT>> { // removed (non-co
 
         return states;
       } else {
-        Node<PropT> NewN = new Node<PropT>();
+        Node<PropT> NewN = new Node<PropT> (pool, accepting_conds);
         NewN.incoming.add(this);
         NewN.toBeDone.addAll(next);
 
@@ -378,9 +374,9 @@ public class Node<PropT> implements Comparable<Node<PropT>> { // removed (non-co
     Formula<PropT> temp_form;
 
     // first create Node 2
-    Node<PropT> Node2 = new Node<PropT>(this.incoming, this.toBeDone,
-                                        this.old, this.next, 
-                                        this.accepting, this.right_of_untils);
+    Node<PropT> Node2 = new Node<PropT> (pool, accepting_conds,
+        this.incoming, this.toBeDone, this.old, this.next, 
+        this.accepting, this.right_of_untils);
 
     temp_form = form.getSub2();
 

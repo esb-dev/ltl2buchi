@@ -11,8 +11,6 @@ import gov.nasa.ltl.graph.Simplify;
 import gov.nasa.ltl.graph.SuperSetReduction;
 import gov.nasa.ltl.trans.Formula;
 import gov.nasa.ltl.trans.LTL2Buchi;
-import gov.nasa.ltl.trans.Node;
-import gov.nasa.ltl.trans.Pool;
 import gov.nasa.ltl.trans.Rewriter;
 import gov.nasa.ltl.trans.Translator;
 
@@ -220,9 +218,7 @@ public class RandomFormulae {
         Graph<Integer> baAut, gbaAut, baBu, gbaBu;
         if (optimise)
           f = new Rewriter<Integer> (f).rewrite ();
-        Translator.set_algorithm (Translator.Algorithm.LTL2AUT);
-        Node.reset_static ();
-        Pool.reset_static ();
+        Translator.setAlgorithm (Translator.Algorithm.LTL2AUT);
         if (haveCpuTime)
           time = tb.getCurrentThreadCpuTime ();
         gbaAut = Translator.translate (f);
@@ -243,9 +239,7 @@ public class RandomFormulae {
         }
         // If baAut is non-empty, gbaAut is non-empty too.
         assert gbaAut.getNodeCount () > 0 && gbaAut.getEdgeCount () > 0;
-        Translator.set_algorithm (Translator.Algorithm.LTL2BUCHI);
-        Node.reset_static ();
-        Pool.reset_static ();
+        Translator.setAlgorithm (Translator.Algorithm.LTL2BUCHI);
         if (haveCpuTime)
           time = tb.getCurrentThreadCpuTime ();
         gbaBu = Translator.translate (f);
