@@ -129,7 +129,7 @@ public class LTL2Buchi {
 	}
 
 	public static void reset_all_static() {
-		Formula.reset_static();
+		Formula.resetStatic();
 	}
 
 	public static Graph<String> translate(String formula, boolean rewrite,

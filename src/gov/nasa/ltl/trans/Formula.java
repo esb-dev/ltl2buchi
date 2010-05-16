@@ -26,9 +26,20 @@ package gov.nasa.ltl.trans;
 import java.util.*;
 
 /**
- * DOCUMENT ME!
+ * Representation of an LTL formula parametrised over an atom type.
+ * Instances of this class are created by forming terms over
+ * {@link #Always(Formula)}, {@link #And(Formula, Formula)} etc.
+ * and {@link #Proposition(Object)} applied to atoms.
+ * 
+ * This class implements an ordering which is incompatible with its
+ * {@link #equals(Object)} method.
+ * @param PropT atom type; <em>should</em> be {@link Comparable}.
  */
 public class Formula<PropT> implements Comparable<Formula<PropT>> {
+  /**
+   * Set of known LTL operators; it is up to the parser to represent
+   * any others in these terms. 
+   */
   public static enum Content {
     PROPOSITION('p'),
     AND('A'),
@@ -52,17 +63,37 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
       return "" + c;
     }
   }
+
+  /** Source of id values. */
   private static int       nId = 0;
+  // TODO: A HashSet won’t help much here, actually. Change to something else.
   private static HashSet<Formula<?>> cache = new HashSet<Formula<?>>();
+  /** Outermost operator of this formula. */
   private Content          content;
+  /**
+   * left and right always match the operand order in the syntax, but
+   * they’re swapped in getSub1 () and getSub2 ().
+   */
   private Formula<PropT>   left;
   private Formula<PropT>   right;
+  /** This formula’s unique ID, computed from nId. */
   private int              id;
-  private int              untils_index; // index to the untils vector
-  private BitSet           rightOfWhichUntils; // for bug fix - formula can be right of >1 untils
+  /** index to the untils vector */
+  private int              untils_index;
+  /** for bug fix - formula can be right of >1 untils */
+  private BitSet           rightOfWhichUntils;
+  /** Atom reference if content == Content.PROPOSITION, null else. */
   private PropT            name;
   private boolean          has_been_visited;
 
+  /**
+   * Creates a new formula with a fresh ID. Calls to this constructor
+   * should be wrapped in {@link #unique(Formula)}.
+   * @param c operator
+   * @param sx left operand
+   * @param dx right operand
+   * @param n atom, if c == Content.PROPOSITION
+   */
   private Formula (Content c, Formula<PropT> sx, Formula<PropT> dx, PropT n) {
     id = nId++;
     content = c;
@@ -73,32 +104,36 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
     untils_index = -1;
     has_been_visited = false;
   }
-  
-  Formula (Formula<PropT> f) {
-    id = nId++;
-    content = f.content;
-    left = f.left;
-    right = f.right;
-    untils_index = f.untils_index;
-    rightOfWhichUntils = f.rightOfWhichUntils != null ?
-        (BitSet)f.rightOfWhichUntils.clone () : null;
-    name = f.name;
-    has_been_visited = f.has_been_visited;
-  }
 
-  public static void reset_static () {
+  /**
+   * Resets the static state of the Formula class. Currently this
+   * affects the cache of known (sub)formulae.
+   */
+  public static void resetStatic () {
     clearCache ();
   }
 
+  /**
+   * Gets the type of the outermost operator.
+   * @return
+   */
   public Content getContent () {
     return content;
   }
 
+  /**
+   * Gets this formula’s atom instance.
+   * @return atom instance if content == Content.PROPOSITION, null else.
+   */
   public PropT getName () {
     return name;
   }
 
-  public Formula<PropT> getNext () {
+  /**
+   * TODO: What does this do?
+   * @return this formula if it is a U, W or V formula, null else
+   */
+  Formula<PropT> getNext () {
     switch (content) {
     case UNTIL:
     case WEAK_UNTIL:
@@ -110,6 +145,12 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
     }
   }
 
+  /**
+   * Get the left-hand operand if this formula’s outermost operator is
+   * binary and not V; right-hand operand if it is V; operand if it is
+   * a unary operand; and null else.
+   * @return
+   */
   public Formula<PropT> getSub1 () {
     if (content == Content.RELEASE) {
       return right;
@@ -118,6 +159,11 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
     }
   }
 
+  /**
+   * Get the right-hand operand if this formula’s outermost operator is
+   * binary and not V; left-hand operand if it is V; and null else.
+   * @return
+   */
   public Formula<PropT> getSub2 () {
     if (content == Content.RELEASE) {
       return left;
@@ -126,19 +172,44 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
     }
   }
 
-  public void addLeft (Formula<PropT> l) {
+  /**
+   * Set the left-hand operand of this formula.
+   * @param l
+   */
+  void addLeft (Formula<PropT> l) {
+    assert content != Content.PROPOSITION : "formula is an atom";
     left = l;
   }
 
-  public void addRight (Formula<PropT> r) {
+  /**
+   * Set the right-hand operand of this formula.
+   * @param r
+   */
+  void addRight (Formula<PropT> r) {
+    switch (content) {
+    case AND:
+    case OR:
+    case RELEASE:
+    case UNTIL:
+    case WEAK_UNTIL:
+      break;
+    default:
+      assert false : "operator " + content + " is not binary";
+    }
     right = r;
   }
 
+  @Override
   public int compareTo (Formula<PropT> f) {
     return (this.id - f.id);
   }
 
-  public int countUntils (int acc_sets) {
+  /**
+   * TODO: What does this do?
+   * @param acc_sets
+   * @return
+   */
+  int countUntils (int acc_sets) {
     has_been_visited = true;
 
     if (getContent() == Content.UNTIL) {
@@ -156,27 +227,36 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
     return acc_sets;
   }
 
-  public BitSet get_rightOfWhichUntils () {
+  BitSet get_rightOfWhichUntils () {
     return rightOfWhichUntils;
   }
 
-  public int get_untils_index () {
+  int get_untils_index () {
     return untils_index;
   }
 
-  public int initialize () {
+  /**
+   * TODO: What does this do?
+   * @return
+   */
+  int initialize () { // TODO: Rename.
     int acc_sets = countUntils(0);
     reset_visited();
 
 //    if (false) System.out.println("Number of Us is: " + acc_sets);
-    /*int test =*/ processRightUntils(0, acc_sets);
+    /*int test =*/
+    processRightUntils(0, acc_sets);
     reset_visited();
 
 //    if (false) System.out.println("Number of Us is: " + test);
     return acc_sets;
   }
 
-  public boolean is_literal () {
+  /**
+   * Tests if this formula is a literal.
+   * @return
+   */
+  public boolean isLiteral () {
     switch (content) {
     case PROPOSITION:
     case TRUE:
@@ -189,11 +269,17 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
     }
   }
 
-  public boolean is_right_of_until (int size) {
+  // TODO: What’s the parameter for?
+  boolean is_right_of_until (int size) {
     return (rightOfWhichUntils != null);
   }
 
-  public boolean is_special_case_of_V (TreeSet<Formula<PropT>> check_against) {
+  /**
+   * TODO: What does this do?
+   * @param check_against
+   * @return
+   */
+  boolean is_special_case_of_V (TreeSet<Formula<PropT>> check_against) {
     // necessary for Java’s type inference to do its work 
     Formula<PropT> tmp = False();
     Formula<PropT> form = Release(tmp, this);
@@ -205,7 +291,13 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
     }
   }
 
-  public boolean is_synt_implied (TreeSet<Formula<PropT>> old, TreeSet<Formula<PropT>> next) {
+  /**
+   * TODO: What does this do?
+   * @param old
+   * @param next
+   * @return
+   */
+  boolean is_synt_implied (TreeSet<Formula<PropT>> old, TreeSet<Formula<PropT>> next) {
     if (this.getContent() == Content.TRUE) {
       return true;
     }
@@ -214,7 +306,7 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
       return true;
     }
 
-    if (is_literal ())
+    if (isLiteral ())
       return false;
     
     Formula<PropT> form1 = this.getSub1();
@@ -256,16 +348,27 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
     case AND:
       return (condition2 && condition1);
     default:
+      // TODO: Make into assert?
       System.out.println("Default case of switch at Form.synt_implied");
       return false;
     }
   }
 
+  /**
+   * Obtains a new formula which is the negation of this one.
+   * @return
+   */
   public Formula<PropT> negate () {
     return Not(this);
   }
 
-  public int processRightUntils (int current_index, int acc_sets) {
+  /**
+   * TODO: What does this do?
+   * @param current_index
+   * @param acc_sets
+   * @return
+   */
+  int processRightUntils (int current_index, int acc_sets) {
     has_been_visited = true;
 
     if (getContent() == Content.UNTIL) {
@@ -290,7 +393,10 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
     return current_index;
   }
 
-  public void reset_visited () {
+  /**
+   * TODO: What does this do?
+   */
+  void reset_visited () {
     has_been_visited = false;
 
     if (left != null) {
@@ -326,6 +432,11 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
     return 0;
   }
 
+  /**
+   * Returns a String representation of this formula.
+   * @param exprId if true, tag each subformula with its ID
+   * @return
+   */
   public String toString (boolean exprId) {
     String idTag = exprId ? "[" + id + "]" : "";
     String conn = null;
@@ -365,6 +476,7 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
     return r + idTag;
   }
 
+  @Override
   public String toString () {
     return toString (false);
   }
@@ -402,7 +514,7 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
   }
 
   public static <PropT> Formula<PropT> Not (Formula<PropT> f) {
-    if (f.is_literal ()) {
+    if (f.isLiteral ()) {
       switch (f.content) {
       case TRUE:
         return False();
@@ -471,10 +583,20 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
     return unique(new Formula<PropT>(Content.WEAK_UNTIL, sx, dx, null));
   }
 
+  /**
+   * Resets the static formula cache.
+   */
   private static void clearCache() {
     cache = new HashSet<Formula<?>>();
   }
 
+  /**
+   * Checks for a formula syntactically equivalent to this one, and
+   * adds this formula to the cache if it is new.
+   * @param <PropT>
+   * @param f formula to be checked
+   * @return syntactically equal cached formula, or if not found, f
+   */
   @SuppressWarnings ("unchecked")
   private static <PropT> Formula<PropT> unique (Formula<PropT> f) {
     for (Formula<?> g: cache) {
@@ -485,6 +607,9 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
     return f;
   }
   
+  /**
+   * Checks if this formula is syntactically equivalent to another one.
+   */
   @Override
   public boolean equals (Object obj) {
     if (obj == null || !(obj instanceof Formula<?>))
@@ -512,6 +637,10 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
     return false;
   }
   
+  /**
+   * Gets this formula’s ID.
+   * @return
+   */
   int getId () {
     return id;
   }

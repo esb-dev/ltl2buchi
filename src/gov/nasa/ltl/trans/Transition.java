@@ -71,7 +71,7 @@ public class Transition<PropT> {
     }
   }
 
-  public boolean enabled (Hashtable<PropT,Boolean> ProgramState) {
+  public boolean enabled (Hashtable<PropT, Boolean> programState) {
     for (Formula<PropT> literal: propositions) {
       PropT atom = literal.getName ();
       boolean negated = false;
@@ -84,14 +84,14 @@ public class Transition<PropT> {
         negated = true;
         // fall through
       case PROPOSITION:
-        if (!ProgramState.containsKey (atom))
+        if (!programState.containsKey (atom))
           return false;
-        if ((ProgramState.get (atom) && negated)
-            || (!ProgramState.get (atom) && !negated))
+        if ((programState.get (atom) && negated)
+            || (!programState.get (atom) && !negated))
           return false;
         break;
       default:
-        assert false;
+        assert false : "non-literal formula in propositions set";
       }
     }
     return true;

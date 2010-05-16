@@ -114,11 +114,11 @@ public class Node<PropT> implements Comparable<Node<PropT>> { // removed (non-co
     if (RTautomaton[nodeId] == null) {
       RTautomaton[nodeId] = new State<PropT>(accepting, equivalenceId);
     } else {
-      RTautomaton[nodeId].update_acc(accepting, equivalenceId);
+      RTautomaton[nodeId].updateAcc(accepting, equivalenceId);
     }
 
     if (is_safety_acc_node()) {
-      RTautomaton[nodeId].update_safety_acc(true);
+      RTautomaton[nodeId].updateSafetyAcc(true);
       safety = true;
     }
 
@@ -251,7 +251,7 @@ public class Node<PropT> implements Comparable<Node<PropT>> { // removed (non-co
         //      	System.out.println("Just set an eventuality requirement");
       }
 
-      if (!ita.is_literal()) {
+      if (!ita.isLiteral()) {
         switch (ita.getContent()) {
         case UNTIL:
         case WEAK_UNTIL:
@@ -414,7 +414,7 @@ public class Node<PropT> implements Comparable<Node<PropT>> { // removed (non-co
     }
 
     /* following lines are probably unecessary because we never split literals!*/
-    if (form.is_literal())/* because we only store literals... */
+    if (form.isLiteral())/* because we only store literals... */
     {
       old.add(form);
       System.out.println("added " + form); // never supposed to see that

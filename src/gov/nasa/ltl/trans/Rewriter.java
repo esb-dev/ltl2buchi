@@ -102,7 +102,7 @@ public class Rewriter<PropT> {
     boolean changed;
 
     assert rules != null : "rules not loaded";
-    if (formula.is_literal () || isRewritten (formula)) {
+    if (formula.isLiteral () || isRewritten (formula)) {
       return formula;
     }
     do {

@@ -25,43 +25,37 @@ import java.util.*;
 /**
  * DOCUMENT ME.
  */
-public class State<PropT> {//implements Comparable<State> { // removed (non-conforming) -pcd
+public class State<PropT> {
   private int        representativeId = -1;
   private LinkedList<Transition<PropT>> transitions;
   private BitSet     accepting;
   private boolean    safety_acceptance;
 
-  public State (BitSet acc) {
+  State (BitSet acc) {
     transitions = new LinkedList<Transition<PropT>>();
     accepting = acc;
     safety_acceptance = false;
   }
 
-  public State (BitSet acc, int equivId) {
+  State (BitSet acc, int equivId) {
     transitions = new LinkedList<Transition<PropT>>();
     accepting = acc;
     safety_acceptance = false;
     representativeId = equivId;
   }
 
-  public State () {
+  State () {
     transitions = new LinkedList<Transition<PropT>>();
     accepting = null;
     safety_acceptance = false;
   }
 
-  public State (int equivId) {
+  State (int equivId) {
     transitions = new LinkedList<Transition<PropT>>();
     accepting = null;
     safety_acceptance = false;
     representativeId = equivId;
   }
-
-  /*  public boolean isAccepting()
-     {
-     return accepting;
-     }
-   */
 
   public void SMoutput (gov.nasa.ltl.graph.Node<PropT>[] nodes, 
                         gov.nasa.ltl.graph.Node<PropT> node) {
@@ -71,56 +65,45 @@ public class State<PropT> {//implements Comparable<State> { // removed (non-conf
 
   public boolean accepts (int i) {
     return (!(accepting.get(i)));
-
     // because in my accepting array 0 corresponds to accepting
   }
 
-  // <2do> pcm - CodeGuide Sapphire bug - need to explicitly qualify Transition
-  // or it's mocking its use in Node
-  public void add (Transition<PropT> trans) {
+  void add (Transition<PropT> trans) {
     transitions.add(trans);
   }
 
-  public int compareTo (State<PropT> f) {
-    if (this == f) {
-      return 0;
-    } else {
-      return 1;
-    }
-  }
-
-  public int get_representativeId () {
+  public int getRepresentativeId () {
     return representativeId;
   }
 
-  public boolean is_safe () {
+  public boolean isSafe () {
     return safety_acceptance;
   }
 
-  public void set_representativeId (int id) {
+  void setRepresentativeId (int id) {
     representativeId = id;
   }
 
-  public void step (Hashtable<PropT,Boolean> ProgramState,
+  public void step (Hashtable<PropT, Boolean> programState,
                     TreeSet<State<PropT>> newStates, 
                     State<PropT>[] automaton) {
     for (Transition<PropT> nextTrans: transitions) {
-      if (nextTrans.enabled(ProgramState)) {
+      if (nextTrans.enabled(programState)) {
         newStates.add(automaton[nextTrans.goesTo()]);
       }
     }
   }
 
-  public void update_acc (BitSet acc) {
+  void updateAcc (BitSet acc) {
     accepting = acc;
   }
 
-  public void update_acc (BitSet acc, int equivId) {
+  void updateAcc (BitSet acc, int equivId) {
     accepting = acc;
     representativeId = equivId;
   }
 
-  public void update_safety_acc (boolean val) {
+  void updateSafetyAcc (boolean val) {
     safety_acceptance = val;
   }
 

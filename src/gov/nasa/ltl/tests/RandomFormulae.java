@@ -234,7 +234,7 @@ public class RandomFormulae {
          * We’ll skip these.
          */
         if (baAut.getNodeCount () == 0 || baAut.getEdgeCount () == 0) {
-          Formula.reset_static ();
+          Formula.resetStatic ();
           continue;
         }
         // If baAut is non-empty, gbaAut is non-empty too.
@@ -255,7 +255,7 @@ public class RandomFormulae {
         gbaTrans[i] = gbaBu.getEdgeCount () / (double)gbaAut.getEdgeCount ();
         baStates[i] = baBu.getNodeCount () / (double)baAut.getNodeCount ();
         baTrans[i] = baBu.getEdgeCount () / (double)baAut.getEdgeCount ();
-        Formula.reset_static ();
+        Formula.resetStatic ();
         i++;
       }
       output (L, gbaStates, gbaTrans, baStates, baTrans, autTime, buTime);

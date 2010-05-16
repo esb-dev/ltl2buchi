@@ -64,7 +64,7 @@ public class TrickyAtomTest {
     Writer<Character> v = Writer.getWriter (Writer.Format.FSP, System.out);
     v.write (gEasy);
     
-    Formula.reset_static ();
+    Formula.resetStatic ();
     
     System.out.println("Tricky:");
     Formula<TrickyAtom> tricky = Formula.Always (Formula.And (Formula.And (Formula

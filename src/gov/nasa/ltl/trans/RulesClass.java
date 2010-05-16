@@ -19,7 +19,7 @@
 package gov.nasa.ltl.trans;
 
 /**
- * DOCUMENT ME!
+ * Default {@link Rewriter} rules.
  * @author ckong - Sept 7, 2001
  */
 public class RulesClass {

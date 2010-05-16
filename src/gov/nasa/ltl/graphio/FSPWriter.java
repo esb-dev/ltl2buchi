@@ -118,12 +118,8 @@ class FSPWriter<PropT> extends Writer<PropT> {
     if (states == null || states.length == 0)
       out.print ("\n\nRES = STOP.\n");
     out.print ("\n\nRES = S0");
-    /* TODO: Is it all right to use states.length instead of
-     * Pool.assign here?
-     */
-//    for (int i = 0; i < Pool.assign(); i++) {
     for (int i = 0; i < states.length; i++) {
-      if (i != states[i].get_representativeId ()) // not representative
+      if (i != states[i].getRepresentativeId ()) // not representative
         continue;
       out.print (',');
       write (states[i]);
@@ -138,7 +134,7 @@ class FSPWriter<PropT> extends Writer<PropT> {
   public void write (State<PropT> s) {
     boolean first = true;
     out.print ('S');
-    out.print (s.get_representativeId ());
+    out.print (s.getRepresentativeId ());
     out.print ('=');
     for (Transition<PropT> t: s.getTransitions ()) {
       if (first)

@@ -53,16 +53,16 @@ class Automaton<PropT> {
 
     for (int i = 0; i < size; i++) {
       if ((automaton[i] != null) && 
-              (i == automaton[i].get_representativeId())) {
+              (i == automaton[i].getRepresentativeId())) {
         nodes[i] = new gov.nasa.ltl.graph.Node<PropT> (g);
         nodes[i].setStringAttribute("label", 
-                                    "S" + automaton[i].get_representativeId());
+                                    "S" + automaton[i].getRepresentativeId());
       }
     }
 
     for (int i = 0; i < size; i++) {
       if ((automaton[i] != null) && 
-              (i == automaton[i].get_representativeId())) {
+              (i == automaton[i].getRepresentativeId())) {
         automaton[i].SMoutput(nodes, nodes[i]);
       }
     }

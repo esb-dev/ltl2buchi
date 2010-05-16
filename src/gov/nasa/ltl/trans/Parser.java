@@ -29,7 +29,7 @@ public class Parser {
   /**
    * DOCUMENT ME!
    */
-  static class Input {
+  private static class Input {
     private StringBuilder sb;
 
     public Input (String str) {
@@ -57,7 +57,7 @@ public class Parser {
    * DOCUMENT ME!
    */
   @SuppressWarnings ("serial")
-  static class EndOfInputException extends Exception {
+  private static class EndOfInputException extends Exception {
   }
 
   public static Formula<String> parse (String str) throws ParseErrorException { // "aObAc"
