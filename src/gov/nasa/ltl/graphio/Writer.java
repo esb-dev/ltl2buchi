@@ -20,7 +20,7 @@ import gov.nasa.ltl.trans.Transition;
  */
 public abstract class Writer<PropT> {
   public static enum Format {
-    FSP, XML, SPIN
+    SM, FSP, XML, SPIN
   }
   
   /**
@@ -71,13 +71,16 @@ public abstract class Writer<PropT> {
    * @param f format to be used
    * @return
    */
-  public static final <PropT> Writer<PropT> getWriter(Format f, PrintStream out) {
-    switch(f) {
+  public static final <PropT> Writer<PropT> getWriter (Format f, PrintStream out) {
+    switch (f) {
+    case SM:
+      return new SMWriter<PropT> (out);
     case FSP:
       return new FSPWriter<PropT> (out);
     case XML:
+      return new XMLWriter<PropT> (out);
     case SPIN:
-      return null;
+      return new SpinWriter<PropT> (out);
     }
     return null;
   }
