@@ -18,10 +18,6 @@
 //
 package gov.nasa.ltl.graph;
 
-import gov.nasa.ltl.graphio.Reader;
-
-import java.io.IOException;
-
 
 /**
  * DOCUMENT ME!
@@ -85,25 +81,6 @@ public class degenSynchronousProduct {
         }
       }
     }
-  }
-
-  public static void main (String[] args) {
-    Graph<String> g0;
-    Graph<String> g1;
-
-    try {
-      g0 = Reader.read(args[0]);
-      g1 = Reader.read(args[1]);
-    } catch (IOException e) {
-      System.err.println("Can't load automata");
-      System.exit(1);
-
-      return;
-    }
-
-    Graph<String> g = product(g0, g1);
-
-    g.save();
   }
 
   @SuppressWarnings ("unchecked")

@@ -18,9 +18,6 @@
 //
 package gov.nasa.ltl.graph;
 
-import java.io.PrintStream;
-
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -166,34 +163,6 @@ public class Node<PropT> {
 		outgoingEdges.remove(e);
 	}
 
-	// Modified by robbyjo - Jul 15, 2002
-	void save(PrintStream out, int format) {
-		switch (format) {
-		case Graph.SM_FORMAT:
-			save_sm(out);
-
-			break;
-
-		case Graph.FSP_FORMAT:
-//			save_fsp(out);
-
-			break;
-
-		case Graph.XML_FORMAT:
-			save_xml(out);
-
-			break;
-
-		case Graph.SPIN_FORMAT:
-			save_spin(out);
-
-			break;
-
-		default:
-			throw new RuntimeException("Unknown format!");
-		}
-	}
-
 	private void init(Graph<PropT> g, Attributes a) {
 		graph = g;
 
@@ -207,74 +176,5 @@ public class Node<PropT> {
 		outgoingEdges = new LinkedList<Edge<PropT>>();
 
 		graph.addNode(this);
-	}
-
-	// Modified by ckong - Sept 7, 2001
-	/*private void save_fsp(PrintStream out) {
-		///System.out.print("S" + getId() + "=(");
-		out.print("S" + getId() + "=(");
-
-		for (Iterator<Edge> i = outgoingEdges.iterator(); i.hasNext();) {
-			i.next().save(out, Graph.FSP_FORMAT);
-
-			if (i.hasNext()) {
-				//System.out.print(" |");
-				out.print(" |");
-			}
-		}
-
-		//System.out.print(")");
-		out.print(")");
-	}*/ // TODO
-
-	private void save_sm(PrintStream out) {
-		int id = getId();
-		out.print("  ");
-		out.println(outgoingEdges.size());
-		attributes.unset("_id");
-		out.print("  ");
-		out.println(attributes);
-		setId(id);
-
-		for (Iterator<Edge<PropT>> i = outgoingEdges.iterator(); i.hasNext();) {
-			i.next().save(out, Graph.SM_FORMAT);
-		}
-	}
-
-	// robbyjo's contribution
-	private void save_spin(PrintStream out) {
-		String ln = System.getProperty("line.separator");
-		String lntab = ln + "     :: ";
-
-		if (getBooleanAttribute("accepting")) {
-			out.print("accept_");
-		}
-
-		out.print("S" + getId() + ":" + ln + "     if" + lntab);
-
-		for (Iterator<Edge<PropT>> i = outgoingEdges.iterator(); i.hasNext();) {
-			Edge<PropT> e = i.next();
-			e.save(out, Graph.SPIN_FORMAT);
-
-			if (i.hasNext()) {
-				out.print(lntab);
-			}
-		}
-
-		out.print(ln + "     fi;\n");
-	}
-
-	private void save_xml(PrintStream out) {
-		int id = getId();
-		out.println("<node id=\"" + id + "\">");
-		attributes.unset("_id");
-		attributes.save(out, Graph.XML_FORMAT);
-		setId(id);
-
-		for (Iterator<Edge<PropT>> i = outgoingEdges.iterator(); i.hasNext();) {
-			i.next().save(out, Graph.XML_FORMAT);
-		}
-
-		out.println("</node>");
 	}
 }

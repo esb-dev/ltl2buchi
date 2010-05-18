@@ -45,10 +45,10 @@ public class SCC {
       System.out.println();
     }
     if (outname == null)
-      w = Writer.getWriter (Writer.Format.FSP, System.out);
+      w = Writer.getWriter (Writer.Format.SM, System.out);
     else
       try {
-        w = Writer.getWriter (Writer.Format.FSP,
+        w = Writer.getWriter (Writer.Format.SM,
             new PrintStream (outname));
       } catch (FileNotFoundException e) {
         e.printStackTrace();

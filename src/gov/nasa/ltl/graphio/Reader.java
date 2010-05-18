@@ -7,8 +7,6 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.StringTokenizer;
-
 import gov.nasa.ltl.graph.Attributes;
 import gov.nasa.ltl.graph.Edge;
 import gov.nasa.ltl.graph.Graph;
@@ -23,18 +21,17 @@ public class Reader {
   private static class Guard extends gov.nasa.ltl.graph.Guard<String> {
     private static final long serialVersionUID = -4427343445274801521L;
     
-    // TODO: this is just a guess
     public Guard (String formula) {
-      StringTokenizer tok = new StringTokenizer (formula, "&");
-      while (tok.hasMoreTokens ()) {
-        String token = tok.nextToken ().trim ();
+      for (String token: formula.split ("&")) {
+        token = token.trim ();
         if (token.equals ("TRUE"))
           add (new Literal<String> (null, false, true));
         else
           if (token.substring (0, 1).equals ("!"))
-            add (new Literal<String> (token.substring (1), true, false));
+            add (new Literal<String> (token.substring (1).trim (),
+                                      true, false));
           else
-            add (new Literal<String> (token, false, false));
+            add (new Literal<String> (token.trim (), false, false));
       }
     }
   }
@@ -84,7 +81,21 @@ public class Reader {
 
   private static Attributes readAttributes (BufferedReader in)
       throws IOException {
-    return new Attributes (readLine (in));
+    String line = readLine (in);
+    Attributes attr = new Attributes ();
+    for (String a: line.split (",")) {
+      int eq = a.indexOf ('=');
+      String key, value;
+      if (eq != -1) {
+        key = a.substring (0, eq);
+        value = a.substring (eq + 1);
+      } else {
+        key = a;
+        value = "";
+      }
+      attr.setString (key, value);
+    }
+    return attr;
   }
 
   private static int readInt (BufferedReader in) throws IOException {

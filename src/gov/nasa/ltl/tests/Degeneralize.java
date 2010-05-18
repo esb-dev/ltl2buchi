@@ -30,7 +30,7 @@ public class Degeneralize {
 
     g = gov.nasa.ltl.graph.Degeneralize.degeneralize(g);
 
-    Writer<String> w = Writer.getWriter (Writer.Format.FSP, System.out);
+    Writer<String> w = Writer.getWriter (Writer.Format.SM, System.out);
     w.write (g);
   }
 }

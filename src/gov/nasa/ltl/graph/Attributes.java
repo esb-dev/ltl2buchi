@@ -18,12 +18,8 @@
 //
 package gov.nasa.ltl.graph;
 
-import java.io.PrintStream;
-
-import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Map;
-import java.util.StringTokenizer;
 
 
 /**
@@ -38,35 +34,6 @@ public class Attributes {
 
   public Attributes (Attributes a) {
     ht = new Hashtable<Object, String>(a.ht);
-  }
-
-  public Attributes (String s) {
-    ht = new Hashtable<Object, String>();
-
-    if (s.equals("-")) {
-      return;
-    }
-
-    StringTokenizer st = new StringTokenizer(s, ",");
-
-    while (st.hasMoreTokens()) {
-      String e = st.nextToken();
-
-      int    idx = e.indexOf("=");
-
-      String key;
-      String value;
-
-      if (idx == -1) {
-        key = e;
-        value = "";
-      } else {
-        key = e.substring(0, idx);
-        value = e.substring(idx + 1);
-      }
-
-      ht.put(key, value);
-    }
   }
 
   public void setBoolean (String name, boolean value) {
@@ -107,62 +74,8 @@ public class Attributes {
     return ht.get(name);
   }
 
-  public synchronized void save (PrintStream out, int format) {
-    switch (format) {
-    //      case Graph.SM_FORMAT: save_sm(out); break;
-    //      case Graph.FSP_FORMAT: save_fsp(out); break;
-    case Graph.XML_FORMAT:
-      save_xml(out);
-
-      break;
-    }
-  }
-
-  public String toString () {
-    if (ht.size() == 0) {
-      return "-";
-    }
-
-    StringBuilder sb = new StringBuilder();
-
-    for (Enumeration<Object> e = ht.keys(); e.hasMoreElements();) {
-      Object key = e.nextElement();
-      String value = ht.get(key);
-
-      sb.append(key);
-
-      if (!value.equals("")) {
-        sb.append('=');
-        sb.append(value);
-      }
-
-      if (e.hasMoreElements()) {
-        sb.append(',');
-      }
-    }
-
-    return sb.toString();
-  }
-
   public void unset (String name) {
     ht.remove(name);
-  }
-
-  private synchronized void save_xml (PrintStream out) {
-    if (ht.size() == 0) {
-      return;
-    }
-
-    for (Enumeration<Object> e = ht.keys(); e.hasMoreElements();) {
-      String key = (String) e.nextElement();
-      String value = ht.get(key);
-
-      if (value == "") {
-        out.println("<" + key + "/>");
-      } else {
-        out.println("<" + key + ">" + value + "</" + key + ">");
-      }
-    }
   }
   
   public Map<Object, String> getAll () {

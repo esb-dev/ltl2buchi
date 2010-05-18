@@ -18,10 +18,6 @@
 //
 package gov.nasa.ltl.graph;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -29,14 +25,6 @@ import java.util.List;
  * DOCUMENT ME!
  */
 public class Graph<PropT> {
-	static final int SM_FORMAT = 0;
-
-	static final int FSP_FORMAT = 1;
-
-	static final int XML_FORMAT = 2;
-
-	static final int SPIN_FORMAT = 3;
-
 	private List<Node<PropT>> nodes;
 
 	private Node<PropT> init;
@@ -168,22 +156,6 @@ public class Graph<PropT> {
 		}
 	}
 
-	public synchronized void save(int format) {
-		save(System.out, format);
-	}
-
-	public synchronized void save() {
-		save(System.out, SM_FORMAT);
-	}
-
-	public synchronized void save(String fname, int format) throws IOException {
-		save(new PrintStream(new FileOutputStream(fname)), format);
-	}
-
-	public synchronized void save(String fname) throws IOException {
-		save(new PrintStream(new FileOutputStream(fname)), SM_FORMAT);
-	}
-
 	synchronized void addNode(Node<PropT> n) {
 		nodes.add(n);
 
@@ -252,176 +224,5 @@ public class Graph<PropT> {
 				dfs(e.getNext(), visitor);
 			}
 		});
-	}
-
-	// Modified by robbyjo - Jul 15, 2002
-	private synchronized void save(PrintStream out, int format) {
-		switch (format) {
-		case SM_FORMAT:
-			save_sm(out);
-
-			break;
-
-		case FSP_FORMAT:
-			save_fsp(out);
-
-			break;
-
-		case XML_FORMAT:
-			save_xml(out);
-
-			break;
-
-		case SPIN_FORMAT:
-			save_spin(out);
-
-			break;
-
-		default:
-			throw new RuntimeException("Unknown format!");
-		}
-	}
-
-	// Modified by ckong - Sept 7, 2001
-	private synchronized void save_fsp(PrintStream out) {
-		boolean empty = false;
-
-		if (init != null) {
-			out.print("RES = S" + init.getId());
-		} else {
-			out.print("Empty");
-			empty = true;
-		}
-
-		for (Iterator<Node<PropT>> i = nodes.iterator(); i.hasNext();) {
-			//System.out.println(",");
-			out.println(",");
-
-			Node<PropT> n = i.next();
-			n.save(out, FSP_FORMAT);
-		}
-
-		//System.out.println(".");
-		out.println(".");
-
-		int nsets = getIntAttribute("nsets");
-
-		if ((nsets == 0) && !empty) {
-			boolean first = true;
-
-			//System.out.print("AS = { ");
-			out.print("AS = { ");
-
-			for (Iterator<Node<PropT>> i = nodes.iterator(); i.hasNext();) {
-				Node<PropT> n = i.next();
-
-				if (n.getBooleanAttribute("accepting")) {
-					if (!first) {
-						//System.out.print(", ");
-						out.print(", ");
-					} else {
-						first = false;
-					}
-
-					//System.out.print("S" + n.getId());
-					out.print("S" + n.getId());
-				}
-			}
-
-			//System.out.println(" }");
-			out.println(" }");
-		} else if (!empty) { // nsets != 0
-
-			for (int k = 0; k < nsets; k++) {
-				boolean first = true;
-
-				//System.out.print("AS"+k+" = { ");
-				out.print("AS" + k + " = { ");
-
-				for (Iterator<Node<PropT>> i = nodes.iterator(); i.hasNext();) {
-					Node<PropT> n = i.next();
-
-					if (n.getBooleanAttribute("acc" + k)) {
-						if (!first) {
-							//System.out.print(", ");
-							out.print(", ");
-						} else {
-							first = false;
-						}
-
-						//System.out.print("S" + n.getId());
-						out.print("S" + n.getId());
-					}
-				}
-
-				//System.out.println(" }");
-				out.println(" }");
-			}
-		}
-
-		if (out != System.out) {
-			out.close();
-		}
-	}
-
-	private synchronized void save_sm(PrintStream out) {
-		out.println(nodes.size());
-		out.println(attributes);
-
-		if (init != null) {
-			init.save(out, SM_FORMAT);
-		}
-
-		for (Iterator<Node<PropT>> i = nodes.iterator(); i.hasNext();) {
-			Node<PropT> n = i.next();
-
-			if (n != init) {
-				n.save(out, SM_FORMAT);
-			}
-		}
-	}
-
-	// robbyjo's contribution
-	private synchronized void save_spin(PrintStream out) {
-		if (init != null) {
-			out.println("never {");
-		} else {
-			out.println("Empty");
-			return;
-		}
-
-		init.save(out, SPIN_FORMAT);
-		for (Iterator<Node<PropT>> i = nodes.iterator(); i.hasNext();) {
-			Node<PropT> n = i.next();
-
-			if (init == n) {
-				continue;
-			}
-
-			n.save(out, SPIN_FORMAT);
-			out.println();
-		}
-
-		out.println("}");
-	}
-
-	private synchronized void save_xml(PrintStream out) {
-		out.println("<?xml version=\"1.0\"?>");
-		out.println("<graph nodes=\"" + nodes.size() + "\">");
-		attributes.save(out, XML_FORMAT);
-
-		for (Iterator<Node<PropT>> i = nodes.iterator(); i.hasNext();) {
-			Node<PropT> n = i.next();
-
-			if (n != init) {
-				n.save(out, XML_FORMAT);
-			} else {
-				n.setBooleanAttribute("init", true);
-				n.save(out, XML_FORMAT);
-				n.setBooleanAttribute("init", false);
-			}
-		}
-
-		out.println("</graph>");
 	}
 }

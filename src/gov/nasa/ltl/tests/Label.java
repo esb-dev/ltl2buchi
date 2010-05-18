@@ -20,7 +20,7 @@ public class Label {
       System.exit(1);
     }
     gov.nasa.ltl.graph.Label.label(g);
-    Writer<String> w = Writer.getWriter (Writer.Format.FSP, System.out);
+    Writer<String> w = Writer.getWriter (Writer.Format.SM, System.out);
     w.write (g);
   }
 }

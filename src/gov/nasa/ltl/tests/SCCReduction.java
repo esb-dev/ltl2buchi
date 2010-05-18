@@ -27,7 +27,7 @@ public class SCCReduction {
       System.exit (1);
     }
     g = gov.nasa.ltl.graph.SCCReduction.reduce(g);
-    Writer<String> w = Writer.getWriter (Writer.Format.FSP, System.out);
+    Writer<String> w = Writer.getWriter (Writer.Format.SM, System.out);
     w.write (g);
   }
 }

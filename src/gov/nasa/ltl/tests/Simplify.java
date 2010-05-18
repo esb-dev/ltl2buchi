@@ -29,7 +29,7 @@ public class Simplify {
     }
 
     g = gov.nasa.ltl.graph.Simplify.simplify(g);
-    Writer<String> w = Writer.getWriter (Writer.Format.FSP, System.out);
+    Writer<String> w = Writer.getWriter (Writer.Format.SM, System.out);
     w.write (g);
   }
 }

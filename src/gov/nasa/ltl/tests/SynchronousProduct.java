@@ -22,7 +22,7 @@ public class SynchronousProduct {
     }
 
     Graph<String> g = gov.nasa.ltl.graph.SynchronousProduct.product(g0, g1);
-    Writer<String> w = Writer.getWriter (Writer.Format.FSP, System.out);
+    Writer<String> w = Writer.getWriter (Writer.Format.SM, System.out);
     w.write (g);
   }
 }
