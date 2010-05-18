@@ -55,7 +55,14 @@ public class Graph<PropT> {
 		attributes = new Attributes(a);
 	}
 
-	public synchronized void setBooleanAttribute(String name, boolean value) {
+	/**
+     * @return the attributes
+     */
+    public Attributes getAttributes () {
+        return attributes;
+    }
+
+    public synchronized void setBooleanAttribute(String name, boolean value) {
 		attributes.setBoolean(name, value);
 	}
 

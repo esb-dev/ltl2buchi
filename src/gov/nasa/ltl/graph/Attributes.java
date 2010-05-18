@@ -22,6 +22,7 @@ import java.io.PrintStream;
 
 import java.util.Enumeration;
 import java.util.Hashtable;
+import java.util.Map;
 import java.util.StringTokenizer;
 
 
@@ -162,5 +163,9 @@ public class Attributes {
         out.println("<" + key + ">" + value + "</" + key + ">");
       }
     }
+  }
+  
+  public Map<Object, String> getAll () {
+    return new Hashtable<Object, String> (ht);
   }
 }
