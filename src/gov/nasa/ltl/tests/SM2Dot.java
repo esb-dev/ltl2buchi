@@ -21,10 +21,9 @@ package gov.nasa.ltl.tests;
 import gov.nasa.ltl.graph.Edge;
 import gov.nasa.ltl.graph.EmptyVisitor;
 import gov.nasa.ltl.graph.Graph;
-import gov.nasa.ltl.graph.Guard;
-import gov.nasa.ltl.graph.Literal;
 import gov.nasa.ltl.graph.Node;
 import gov.nasa.ltl.graphio.Reader;
+import gov.nasa.ltl.graphio.Writer;
 
 import java.io.IOException;
 
@@ -69,32 +68,10 @@ public class SM2Dot {
     }
   }
   
-  private static String formatGuard (Guard<String> g) {
-    StringBuffer buf = new StringBuffer ();
-    boolean first = true;
-    
-    if (g.isTrue ())
-      return "-";
-    for (Literal<String> l: g) {
-      if (first)
-        first = false;
-      else
-        buf.append ("&");
-      if (l.isTrue ())
-        buf.append ("TRUE");
-      else {
-        if (l.isNegated ())
-          buf.append ("!");
-        buf.append (l.getAtom ());
-      }
-    }
-    return buf.toString ();
-  }
-
   public static void printEdge (Edge<String> e) {
     int          id = e.getSource().getId();
     int          nxt = e.getNext().getId();
-    String       guard = formatGuard (e.getGuard());
+    String       guard = Writer.formatSMGuard (e.getGuard());
     String       action = e.getAction();
     String       label = e.getStringAttribute("label");
 

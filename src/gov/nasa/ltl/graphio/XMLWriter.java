@@ -33,7 +33,7 @@ import gov.nasa.ltl.trans.Transition;
  *
  */
 public class XMLWriter<PropT> extends Writer<PropT> {
-  private PrintStream out;
+  protected PrintStream out;
   
   XMLWriter(PrintStream s) {
     out = s;
@@ -90,7 +90,7 @@ public class XMLWriter<PropT> extends Writer<PropT> {
         if (t.getGuard () != null && !t.getGuard ().isTrue ()) {
           Element guard = doc.createElement ("guard");
           guard.appendChild (
-              doc.createTextNode (t.getGuard ().toString ()));
+              doc.createTextNode (formatSMGuard (t.getGuard ())));
           trans.appendChild (guard);
         }
         if (t.getAction () != null && !t.getAction ().equals ("-")) {
@@ -102,6 +102,7 @@ public class XMLWriter<PropT> extends Writer<PropT> {
       }
       graph.appendChild (node);
     }
+    doc.appendChild (graph);
     source = new DOMSource (doc);
     result = new StreamResult (out);
     try {

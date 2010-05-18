@@ -3,8 +3,8 @@
  */
 package gov.nasa.ltl.graphio;
 
+import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-
 import gov.nasa.ltl.graph.Guard;
 import gov.nasa.ltl.graph.Literal;
 import gov.nasa.ltl.graph.Edge;
@@ -83,5 +83,19 @@ public abstract class Writer<PropT> {
       return new SpinWriter<PropT> (out);
     }
     return null;
+  }
+  
+  /**
+   * Helper function to format a guard in SM format, because this is
+   * needed in several places.
+   * @param <PropT>
+   * @param g guard
+   * @return string of PropT atoms, !, & and TRUE, or "-"
+   */
+  public static <PropT> String formatSMGuard (Guard<PropT> g) {
+    ByteArrayOutputStream s = new ByteArrayOutputStream ();
+    PrintStream p = new PrintStream (s);
+    new SMWriter<PropT> (p).write (g);
+    return s.toString ();
   }
 }

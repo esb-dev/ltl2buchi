@@ -5,10 +5,8 @@ package gov.nasa.ltl.graphio;
 
 import java.io.PrintStream;
 
-import gov.nasa.ltl.graph.Guard;
 import gov.nasa.ltl.graph.Edge;
 import gov.nasa.ltl.graph.Graph;
-import gov.nasa.ltl.graph.Literal;
 import gov.nasa.ltl.graph.Node;
 import gov.nasa.ltl.trans.State;
 import gov.nasa.ltl.trans.Transition;
@@ -17,11 +15,11 @@ import gov.nasa.ltl.trans.Transition;
  * @author estar
  *
  */
-class FSPWriter<PropT> extends Writer<PropT> {
-  private PrintStream out;
+class FSPWriter<PropT> extends SMWriter<PropT> {
+  protected PrintStream out;
   
   FSPWriter(PrintStream s) {
-    out = s;
+    super (s);
   }
   
   /* (non-Javadoc)
@@ -163,32 +161,5 @@ class FSPWriter<PropT> extends Writer<PropT> {
         if (t.isAccepting (i))
           out.print (i);
     out.print ("} -> S" + t.goesTo () + " ");
-  }
-
-  /* (non-Javadoc)
-   * @see gov.nasa.ltl.graphio.Writer#write(gov.nasa.ltl.trans.Guard)
-   */
-  @Override
-  public void write (Guard<PropT> g) {
-    boolean first = true;
-    if (g.isEmpty ())
-      write (new Literal<PropT> (null, false, true));
-    for (Literal<PropT> l: g) {
-      if (!first)
-        out.print ("&");
-      first = false;
-      write (l);
-    }
-  }
-
-  @Override
-  public void write (Literal<PropT> l) {
-    if (l.isTrue ())
-      out.print ("TRUE");
-    else {
-      if(l.isNegated ())
-        out.print ('!');
-      out.print (l.getAtom ());
-    }
   }
 }

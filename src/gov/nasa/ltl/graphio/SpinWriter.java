@@ -18,7 +18,7 @@ import gov.nasa.ltl.trans.Transition;
  *
  */
 class SpinWriter<PropT> extends Writer<PropT> {
-  private PrintStream out;
+  protected PrintStream out;
   
   SpinWriter(PrintStream s) {
     out = s;
@@ -49,6 +49,8 @@ class SpinWriter<PropT> extends Writer<PropT> {
    */
   @Override
   public void write (Node<PropT> n) {
+    if (n.getBooleanAttribute ("accepting"))
+      out.print ("accept_");
     out.println ("S" + n.getId () + ":");
     out.println ("     if");
     for (Edge<PropT> e: n.getOutgoingEdges ()) {

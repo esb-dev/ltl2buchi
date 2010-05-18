@@ -19,7 +19,7 @@ import gov.nasa.ltl.trans.Transition;
  *
  */
 class SMWriter<PropT> extends Writer<PropT> {
-  private PrintStream out;
+  protected PrintStream out;
   
   SMWriter(PrintStream s) {
     out = s;
