@@ -16,8 +16,6 @@ import gov.nasa.ltl.trans.Transition;
  *
  */
 class FSPWriter<PropT> extends SMWriter<PropT> {
-  protected PrintStream out;
-  
   FSPWriter(PrintStream s) {
     super (s);
   }
@@ -88,7 +86,10 @@ class FSPWriter<PropT> extends SMWriter<PropT> {
   public void write (Edge<PropT> e) {
     int nsets = e.getSource ().getGraph ().getIntAttribute ("nsets");
     boolean first = true;
-    write (e.getGuard ());
+    if (e.getGuard ().isTrue ())
+      out.print ("TRUE");
+    else
+      write (e.getGuard ());
     if (nsets != 0) {
       for (int i = 0; i < nsets; i++) {
         if (e.getBooleanAttribute ("acc" + i)) {
