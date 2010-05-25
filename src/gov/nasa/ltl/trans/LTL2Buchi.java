@@ -160,7 +160,7 @@ public class LTL2Buchi {
         if (rewrite) {
           formula = new Rewriter<PropT> (formula).rewrite();
           if (debug)
-            System.out.println("Rewritten as       : " + formula + "\n");
+            System.out.println("Rewritten as      : " + formula + "\n");
         }
 		Graph<PropT> gba = Translator.translate(formula);
 		printStats(gba, "Generalized buchi automaton generated");

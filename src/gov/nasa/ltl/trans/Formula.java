@@ -18,12 +18,15 @@
 //
 package gov.nasa.ltl.trans;
 
+import java.util.BitSet;
+import java.util.HashMap;
+import java.util.TreeSet;
+
 //Written by Dimitra Giannakopoulou, 19 Jan 2001
 //Parser by Flavio Lerda, 8 Feb 2001
 //Parser extended by Flavio Lerda, 21 Mar 2001
 //Modified to accept && and || by Roby Joehanes 15 Jul 2002
 
-import java.util.*;
 
 /**
  * Representation of an LTL formula parametrised over an atom type.
@@ -66,8 +69,13 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
 
   /** Source of id values. */
   private static int       nId = 0;
-  // TODO: A HashSet won’t help much here, actually. Change to something else.
-  private static HashSet<Formula<?>> cache = new HashSet<Formula<?>>();
+  /**
+   * Storage for (sub)formulae we’ve already seen. We set both the
+   * key and the entry to the formula being stored, so it can be
+   * looked up by hash and retrieved to replace an equivalent formula.
+   */
+  private static HashMap<Formula<?>, Formula<?>> cache =
+    new HashMap<Formula<?>, Formula<?>>();
   /** Outermost operator of this formula. */
   private Content          content;
   /**
@@ -85,6 +93,8 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
   /** Atom reference if content == Content.PROPOSITION, null else. */
   private PropT            name;
   private boolean          has_been_visited;
+  /** Computed hash value, or 0 if it has to be recomputed. */
+  private int              hash = 0;
 
   /**
    * Creates a new formula with a fresh ID. Calls to this constructor
@@ -110,7 +120,7 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
    * affects the cache of known (sub)formulae.
    */
   public static void resetStatic () {
-    clearCache ();
+    cache = new HashMap<Formula<?>, Formula<?>>();
   }
 
   /**
@@ -179,6 +189,7 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
   void addLeft (Formula<PropT> l) {
     assert content != Content.PROPOSITION : "formula is an atom";
     left = l;
+    hash = 0;
   }
 
   /**
@@ -197,6 +208,7 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
       assert false : "operator " + content + " is not binary";
     }
     right = r;
+    hash = 0;
   }
 
   @Override
@@ -269,6 +281,11 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
     }
   }
 
+  /**
+   * TODO: What does this do?
+   * @param size
+   * @return
+   */
   // TODO: What’s the parameter for?
   boolean is_right_of_until (int size) {
     return (rightOfWhichUntils != null);
@@ -584,26 +601,18 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
   }
 
   /**
-   * Resets the static formula cache.
-   */
-  private static void clearCache() {
-    cache = new HashSet<Formula<?>>();
-  }
-
-  /**
    * Checks for a formula syntactically equivalent to this one, and
    * adds this formula to the cache if it is new.
    * @param <PropT>
    * @param f formula to be checked
    * @return syntactically equal cached formula, or if not found, f
+   * @see Formula#cache
    */
   @SuppressWarnings ("unchecked")
   private static <PropT> Formula<PropT> unique (Formula<PropT> f) {
-    for (Formula<?> g: cache) {
-      if (f.equals (g))
-        return (Formula<PropT>)g;
-    }
-    cache.add ((Formula<Object>)f);
+    if (cache.containsKey (f))
+      return (Formula<PropT>)cache.get (f);
+    cache.put (f, f);
     return f;
   }
   
@@ -643,5 +652,24 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
    */
   int getId () {
     return id;
+  }
+  
+  @Override
+  public int hashCode () {
+    // TODO: This is probably not a good solution.
+    // TODO: Should information from the translation algorithm be considered?
+    int l = 0, r = 0, me;
+    
+    if (hash != 0)
+      return hash;
+    if (content != Content.PROPOSITION)
+      me = content.hashCode ();
+    else
+      me = name.hashCode ();
+    if (left != null)
+      l = left.hashCode ();
+    if (right != null)
+      r = right.hashCode ();
+    return hash = me ^ ~l ^ r;
   }
 }
