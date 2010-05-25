@@ -54,9 +54,12 @@ public class Guard<PropT> extends TreeSet<Literal<PropT>>
     }
     return 0;
   }
-  
+
+  /**
+   * Synonym for {@link #isEmpty()}.
+   * @return
+   */
   public boolean isTrue () {
-    return isEmpty () || 
-      (size () == 1 && contains (new Literal<PropT> (null, false, true)));
+    return isEmpty ();
   }
 }

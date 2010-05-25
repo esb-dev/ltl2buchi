@@ -25,13 +25,12 @@ public class Reader {
       for (String token: formula.split ("&")) {
         token = token.trim ();
         if (token.equals ("TRUE"))
-          add (new Literal<String> (null, false, true));
+          /* Nothing happens. */;
         else
           if (token.substring (0, 1).equals ("!"))
-            add (new Literal<String> (token.substring (1).trim (),
-                                      true, false));
+            add (new Literal<String> (token.substring (1).trim (), true));
           else
-            add (new Literal<String> (token.trim (), false, false));
+            add (new Literal<String> (token.trim (), false));
       }
     }
   }

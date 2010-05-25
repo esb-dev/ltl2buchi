@@ -12,14 +12,11 @@ import java.util.ArrayList;
 public class Literal<PropT> implements Comparable<Literal<PropT>> {
   private PropT atom;
   private boolean negated;
-  private boolean isTrue;
   
-  public Literal(PropT atom, boolean negated, boolean isTrue) {
-    assert (atom != null && !isTrue) ||
-      (atom == null && !negated && isTrue);
+  public Literal(PropT atom, boolean negated) {
+    assert atom != null;
     this.atom = atom;
     this.negated = negated;
-    this.isTrue = isTrue;
   }
 
   /**
@@ -36,25 +33,10 @@ public class Literal<PropT> implements Comparable<Literal<PropT>> {
     return negated;
   }
 
-  /**
-   * @return the isTrue
-   */
-  public boolean isTrue () {
-    return isTrue;
-  }
-
-  /**
-   * TRUE < ... < x < !x < ...
-   */
   @Override
   public int compareTo (Literal<PropT> o) {
     if (o == null)
       throw new NullPointerException ();
-    if (isTrue)
-      if (o.isTrue)
-        return 0;
-      else
-        return -1;
     int r = compareAtoms (atom, o.atom);
     if (r != 0)
       return r;

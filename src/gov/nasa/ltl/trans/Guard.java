@@ -20,23 +20,17 @@ public class Guard<PropT> extends gov.nasa.ltl.graph.Guard<PropT> {
     for (Formula<PropT> f: literals) {
       switch(f.getContent ()) {
       case PROPOSITION:
-        add (new Literal<PropT> (f.getName (), false, false));
+        add (new Literal<PropT> (f.getName (), false));
         break;
       case NOT:
         assert f.getSub1 ().getContent () == Content.PROPOSITION;
-        add (new Literal<PropT> (f.getSub1 ().getName (), true, false));
+        add (new Literal<PropT> (f.getSub1 ().getName (), true));
         break;
       case TRUE:
-        add (new Literal<PropT> (null, false, true));
+        // Nothing happens.
         break;
       default:
-        /* TODO: This should not happen, but currently
-         * there is no good way to exclude the possibility.
-         * A data type to represent literals would help
-         * here, but this would require a lot of changes in
-         * other places.
-         */
-        assert false : "Bad literal: " + f;
+        assert false : "Not a literal: " + f;
       }
     }
   }

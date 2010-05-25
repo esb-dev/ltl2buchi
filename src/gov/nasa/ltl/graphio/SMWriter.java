@@ -141,7 +141,7 @@ class SMWriter<PropT> extends Writer<PropT> {
     boolean first = true;
  
     if (g.isTrue ()) {
-      out.print ('-');
+      out.print ("TRUE");
       return;
     }
     for (Literal<PropT> l: g) {
@@ -158,12 +158,8 @@ class SMWriter<PropT> extends Writer<PropT> {
    */
   @Override
   public void write (Literal<PropT> l) {
-    if (l.isTrue ())
-      out.print ("TRUE");
-    else {
-      if (l.isNegated ())
-        out.print ('!');
-      out.print (l.getAtom ());
-    }
+    if (l.isNegated ())
+      out.print ('!');
+    out.print (l.getAtom ());
   }
 }
