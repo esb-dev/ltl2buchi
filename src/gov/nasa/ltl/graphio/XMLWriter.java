@@ -29,7 +29,7 @@ import gov.nasa.ltl.trans.State;
 import gov.nasa.ltl.trans.Transition;
 
 /**
- * @author estar
+ * @author Ewgenij Starostin
  *
  */
 public class XMLWriter<PropT> extends Writer<PropT> {

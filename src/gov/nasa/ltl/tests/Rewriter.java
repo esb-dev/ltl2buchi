@@ -19,7 +19,7 @@ import java.io.InputStreamReader;
  * input and rewrite them.
  * 
  * Moved to a separate class from {@link gov.nasa.ltl.trans.Rewriter}.
- * @author estar
+ * @author Ewgenij Starostin
  *
  */
 public class Rewriter {

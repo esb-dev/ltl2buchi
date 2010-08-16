@@ -14,7 +14,7 @@ import gov.nasa.ltl.trans.State;
 import gov.nasa.ltl.trans.Transition;
 
 /**
- * @author estar
+ * @author Ewgenij Starostin
  * @param <PropT>
  *
  */

@@ -6,7 +6,7 @@ package gov.nasa.ltl.graph;
 import java.util.ArrayList;
 
 /**
- * @author estar
+ * @author Ewgenij Starostin
  *
  */
 public class Literal<PropT> implements Comparable<Literal<PropT>> {

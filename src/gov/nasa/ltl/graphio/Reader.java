@@ -14,7 +14,7 @@ import gov.nasa.ltl.graph.Literal;
 import gov.nasa.ltl.graph.Node;
 
 /**
- * @author estar
+ * @author Ewgenij Starostin
  * 
  */
 public class Reader {

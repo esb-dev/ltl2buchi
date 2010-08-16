@@ -10,7 +10,7 @@ import java.util.TreeSet;
  * 
  * …Must implement {@link java.lang.Comparable} because this is used in
  * {@link ITypeNeighbor}. 
- * @author estar
+ * @author Ewgenij Starostin
  *
  */
 public class Guard<PropT> extends TreeSet<Literal<PropT>>

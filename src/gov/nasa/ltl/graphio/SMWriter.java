@@ -15,7 +15,7 @@ import gov.nasa.ltl.trans.State;
 import gov.nasa.ltl.trans.Transition;
 
 /**
- * @author estar
+ * @author Ewgenij Starostin
  *
  */
 class SMWriter<PropT> extends Writer<PropT> {

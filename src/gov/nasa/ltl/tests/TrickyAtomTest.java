@@ -17,7 +17,7 @@ import gov.nasa.ltl.trans.LTL2Buchi;
  * where c is the char it was passed, i is the number of TrickyAtom
  * instances existing at the time, j is the number of toString calls
  * made to TrickyAtoms, k compareTo calls, l equals calls.
- * @author estar
+ * @author Ewgenij Starostin
  *
  */
 public class TrickyAtomTest {

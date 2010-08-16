@@ -34,14 +34,14 @@ import java.util.Random;
  * If the verbose flag is set, extra information is printed to standard
  * error in gnuplot comment format (so redirecting standard output and
  * error to the same file still yields valid input for gnuplot).
- * @author estar
+ * @author Ewgenij Starostin
  *
  */
 public class RandomFormulae {
   /**
    * Infinite iterator which returns a random {@link Formula} of
    * the required length every time.
-   * @author estar
+   * @author Ewgenij Starostin
    *
    */
   private static class FormulaGenerator implements Iterator<Formula<Integer>> {
@@ -139,7 +139,7 @@ public class RandomFormulae {
 
   /**
    * Infinite list of random {@link Formula}e of a specified length.
-   * @author estar
+   * @author Ewgenij Starostin
    *
    */
   public static class FormulaSource implements Iterable<Formula<Integer>> {

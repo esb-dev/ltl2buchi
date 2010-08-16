@@ -11,7 +11,7 @@ import java.util.Collection;
 
 /**
  * 
- * @author estar
+ * @author Ewgenij Starostin
  */
 public class Guard<PropT> extends gov.nasa.ltl.graph.Guard<PropT> {
   private static final long serialVersionUID = -1099850840173426153L;
