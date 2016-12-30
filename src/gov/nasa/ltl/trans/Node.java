@@ -75,7 +75,7 @@ public class Node<PropT> implements Comparable<Node<PropT>> { // removed (non-co
   }
 
   public static <PropT> Node<PropT> createInitial (Formula<PropT> form, Pool pool) {
-    int accepting_conds = form.initialize(); // first mark right forms of untils;
+    int accepting_conds = form.init_acc_sets(); // first mark right forms of untils;
 
     //    System.out.println("Accepting conditions: " + accepting_conds);
     Node<PropT> init = new Node<PropT> (pool, accepting_conds);

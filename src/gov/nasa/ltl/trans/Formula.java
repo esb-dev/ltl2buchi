@@ -36,14 +36,14 @@ import java.util.TreeSet;
  * 
  * This class implements an ordering which is incompatible with its
  * {@link #equals(Object)} method.
- * @param PropT atom type; <em>should</em> be {@link Comparable}.
+ * @param <PropT></PropT> atom type; <em>should</em> be {@link Comparable}.
  */
 public class Formula<PropT> implements Comparable<Formula<PropT>> {
   /**
    * Set of known LTL operators; it is up to the parser to represent
    * any others in these terms. 
    */
-  public static enum Content {
+  public enum Content {
     PROPOSITION('p'),
     AND('A'),
     OR('O'),
@@ -125,7 +125,7 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
 
   /**
    * Gets the type of the outermost operator.
-   * @return
+   * @return Content
    */
   public Content getContent () {
     return content;
@@ -140,7 +140,7 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
   }
 
   /**
-   * TODO: What does this do?
+   * Gets binary formula
    * @return this formula if it is a U, W or V formula, null else
    */
   Formula<PropT> getNext () {
@@ -159,7 +159,7 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
    * Get the left-hand operand if this formula’s outermost operator is
    * binary and not V; right-hand operand if it is V; operand if it is
    * a unary operand; and null else.
-   * @return
+   * @return left-hand from U, W; right-hand from V
    */
   public Formula<PropT> getSub1 () {
     if (content == Content.RELEASE) {
@@ -172,7 +172,7 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
   /**
    * Get the right-hand operand if this formula’s outermost operator is
    * binary and not V; left-hand operand if it is V; and null else.
-   * @return
+   * @return right-hand from  U, W; left-hand from V
    */
   public Formula<PropT> getSub2 () {
     if (content == Content.RELEASE) {
@@ -183,7 +183,7 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
   }
 
   /**
-   * Set the left-hand operand of this formula.
+   * Set the left-hand operand of this formula; or the only one if operator is unary
    * @param l
    */
   void addLeft (Formula<PropT> l) {
@@ -193,7 +193,7 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
   }
 
   /**
-   * Set the right-hand operand of this formula.
+   * Set the right-hand operand of this formula with binary operator.
    * @param r
    */
   void addRight (Formula<PropT> r) {
@@ -217,7 +217,7 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
   }
 
   /**
-   * TODO: What does this do?
+   * Counts untils in formula
    * @param acc_sets
    * @return
    */
@@ -251,7 +251,7 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
    * TODO: What does this do?
    * @return
    */
-  int initialize () { // TODO: Rename.
+  int init_acc_sets() { 
     int acc_sets = countUntils(0);
     reset_visited();
 
@@ -648,7 +648,7 @@ public class Formula<PropT> implements Comparable<Formula<PropT>> {
   
   /**
    * Gets this formula’s ID.
-   * @return
+   * @return id
    */
   int getId () {
     return id;
