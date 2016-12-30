@@ -1,0 +1,1 @@
+lein localrepo install ltl2buchi.jar ltl2buchi 1.0.0
